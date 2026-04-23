@@ -14,10 +14,10 @@ export async function GET(request: Request) {
     const results = await prisma.newsItem.findMany({
       where: {
         OR: [
-          { headline: { contains: q } },
-          { category: { contains: q } },
-          { summaryPoints: { contains: q } },
-          { details: { contains: q } }
+          { headline: { contains: q, mode: "insensitive" } },
+          { category: { contains: q, mode: "insensitive" } },
+          { summaryPoints: { contains: q, mode: "insensitive" } },
+          { details: { contains: q, mode: "insensitive" } }
         ]
       },
       orderBy: {

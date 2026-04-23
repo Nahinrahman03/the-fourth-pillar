@@ -1,13 +1,21 @@
 import { ReviewSubmissionForm } from "@/components/review-submission-form";
 import { requireAdmin } from "@/lib/auth";
-import { getReviewQueue } from "@/lib/news";
+import { getReviewMetrics, getReviewQueue } from "@/lib/news";
 import { formatDate } from "@/lib/utils";
+import type { Prisma } from "@prisma/client";
+
+type ReviewSubmission = Prisma.SubmissionGetPayload<{
+  include: { contributor: { include: { profile: true } } };
+}>;
 
 export default async function ReviewQueuePage() {
   await requireAdmin();
-  const queue = await getReviewQueue();
+  const [queue, metrics] = await Promise.all([
+    getReviewQueue(),
+    getReviewMetrics()
+  ]);
 
-  const urgentCount = queue.filter((submission) => submission.priority > 0).length;
+  const urgentCount = queue.filter((submission: ReviewSubmission) => submission.priority > 0).length;
 
   return (
     <section className="stack">
@@ -27,11 +35,11 @@ export default async function ReviewQueuePage() {
         </div>
         <div className="metric-cell">
           <p className="section-label">Reviewed today</p>
-          <div className="metric-value">156</div>
+          <div className="metric-value">{metrics.reviewedToday}</div>
         </div>
         <div className="metric-cell">
           <p className="section-label">Avg. wait time</p>
-          <div className="metric-value">14M</div>
+          <div className="metric-value">{metrics.waitTime}</div>
         </div>
       </div>
 
@@ -44,7 +52,7 @@ export default async function ReviewQueuePage() {
         </div>
 
         {queue.length > 0 ? (
-          queue.map((submission) => (
+          queue.map((submission: ReviewSubmission) => (
             <article className="verification-row" key={submission.id}>
               <div className={`priority-flag ${submission.priority > 0 ? "urgent" : "standard"}`.trim()}>
                 {submission.priority > 0 ? "Priority" : "Standard"}

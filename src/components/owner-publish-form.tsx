@@ -66,7 +66,13 @@ export function OwnerPublishForm() {
   }
 
   return (
-    <div className="editor-form stack">
+    <form
+      className="editor-form stack"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void publish();
+      }}
+    >
       <div className="field">
         <label htmlFor="owner-headline">News headline</label>
         <input
@@ -165,13 +171,13 @@ export function OwnerPublishForm() {
       </div>
 
       <div className="action-row">
-        <button className="button" disabled={loading} onClick={publish} type="button">
+        <button className="button" disabled={loading} type="submit">
           {loading ? "Publishing..." : "Publish brief"}
         </button>
       </div>
 
       {message ? <p className="status-message success">{message}</p> : null}
       {error ? <p className="status-message error">{error}</p> : null}
-    </div>
+    </form>
   );
 }

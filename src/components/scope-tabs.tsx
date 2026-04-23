@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { NEWS_SCOPE_OPTIONS } from "@/lib/news-scope";
 import { cn } from "@/lib/utils";
 
@@ -9,13 +10,13 @@ export function ScopeTabs({ activeScope }: ScopeTabsProps) {
   return (
     <nav className="scope-tabs" aria-label="News scopes">
       {NEWS_SCOPE_OPTIONS.map((option) => (
-        <a
+        <Link
           className={cn("scope-tab", activeScope === option.scope && "active")}
-          href={option.href}
+          href={option.href as any}
           key={option.scope}
         >
           {option.label}
-        </a>
+        </Link>
       ))}
     </nav>
   );

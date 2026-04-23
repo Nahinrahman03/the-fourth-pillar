@@ -29,9 +29,9 @@ export default async function LocalNewsPage({ searchParams }: LocalPageProps) {
 
       <nav className="sort-tabs" aria-label="News sort">
         {VALID_SORTS.map((s) => (
-          <a key={s} href={`/local?sort=${s}`} className={`sort-tab${sort === s ? " active" : ""}`}>
+          <Link key={s} href={`/local?sort=${s}`} className={`sort-tab${sort === s ? " active" : ""}`}>
             {SORT_LABELS[s]}
-          </a>
+          </Link>
         ))}
       </nav>
 

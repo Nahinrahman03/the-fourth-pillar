@@ -66,8 +66,7 @@ export default async function OwnerPublishPage() {
                     </p>
                     <h3 className="card-title">{flag.newsItem.headline}</h3>
                     <p className="section-meta">
-                      Flagged {formatDate(flag.createdAt)}
-                      {flag.reporter ? ` | by ${flag.reporter.email ?? flag.reporter.phoneNumber ?? "member"}` : " | by visitor"}
+                      Flagged {formatDate(flag.createdAt)} | by {flag.reporter?.email ?? flag.reporter?.phoneNumber ?? "member"}
                     </p>
                   </div>
                   <FlagReviewActions flagId={flag.id} />

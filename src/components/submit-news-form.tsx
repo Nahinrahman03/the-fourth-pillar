@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { NEWS_SCOPE_OPTIONS } from "@/lib/news-scope";
 
-const STORAGE_KEY = "architect-submit-draft";
+const STORAGE_KEY = "tfp-submit-draft";
 const initialPoints = ["", "", "", "", ""];
 
 function clearFeedback(setMessage: (v: null) => void, setError: (v: null) => void) {
@@ -68,6 +68,7 @@ export function SubmitNewsForm() {
 
     setMessage("Draft saved in this browser.");
     setError(null);
+    setTimeout(() => setMessage(null), 3000);
   }
 
   async function submitNews() {

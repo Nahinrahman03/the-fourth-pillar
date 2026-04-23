@@ -1,7 +1,7 @@
 "use client";
 
 import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult } from "firebase/auth";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -40,7 +40,12 @@ export function SignInPanel() {
           return;
         }
 
-        router.push("/dashboard/profile");
+        const session = await getSession();
+        const destination =
+          (session?.user as { role?: string } | undefined)?.role === "ADMIN"
+            ? "/dashboard/dev"
+            : "/dashboard/profile";
+        router.push(destination);
         router.refresh();
       } catch {
         // No redirect result — normal page load, do nothing
@@ -68,7 +73,12 @@ export function SignInPanel() {
         return;
       }
 
-      router.push("/dashboard/profile");
+      const session = await getSession();
+      const destination =
+        (session?.user as { role?: string } | undefined)?.role === "ADMIN"
+          ? "/dashboard/dev"
+          : "/dashboard/profile";
+      router.push(destination);
       router.refresh();
     } catch (err: unknown) {
       const code = (err as { code?: string }).code ?? "";

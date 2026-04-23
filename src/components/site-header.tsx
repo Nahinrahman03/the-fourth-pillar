@@ -1,59 +1,67 @@
 import Link from "next/link";
-
 import { SearchBar } from "@/components/search-bar";
-import { SignOutButton } from "@/components/sign-out-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getCurrentUser } from "@/lib/auth";
 
 export async function SiteHeader() {
   const user = await getCurrentUser();
   const isAdmin = user?.role === "ADMIN";
-  const isOwner = isAdmin;
 
   return (
-    <header className="topbar">
-      <Link className="brand-lockup" href="/">
-        <span className="brand-title">THE FOURTH PILLAR</span>
+    <header className="terminal-topbar">
+      {/* Brand */}
+      <Link className="topbar-brand" href="/">
+        THE FOURTH PILLAR
       </Link>
 
-      <SearchBar />
-
-      <nav className="nav-links">
-        <Link className="nav-link" href="/">
-          Home
+      {/* Scope navigation tabs */}
+      <nav className="topbar-scope-tabs" aria-label="News scope">
+        <Link className="topbar-scope-tab" href="/">
+          All
         </Link>
-        {!isAdmin ? (
-          <Link className="nav-link" href={user ? "/dashboard/contribute" : "/signin"}>
-            Contribute
-          </Link>
-        ) : null}
+        <Link className="topbar-scope-tab" href="/local">
+          Local
+        </Link>
+        <Link className="topbar-scope-tab" href="/india">
+          India
+        </Link>
+        <Link className="topbar-scope-tab" href="/world">
+          World
+        </Link>
+      </nav>
+
+      {/* Right actions */}
+      <div className="topbar-actions">
+        <SearchBar />
+        <ThemeToggle />
+
         {user ? (
-          <Link className="nav-link" href="/dashboard/profile">
-            Profile
+          <Link
+            href="/dashboard/profile"
+            className="topbar-avatar"
+            aria-label="Profile"
+            title={user.name || user.email || "Profile"}
+          >
+            {user.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.image}
+                alt={user.name || "User"}
+                className="topbar-avatar-img"
+              />
+            ) : (
+              <span className="topbar-avatar-initials">
+                {(user.name || user.email || "U").charAt(0).toUpperCase()}
+              </span>
+            )}
+            {isAdmin && <span className="topbar-admin-dot" aria-label="Admin" />}
           </Link>
-        ) : null}
-        {isOwner ? (
-          <>
-            <a className="nav-link" href="/owner/publish">
-              Owner Desk
-            </a>
-            <Link className="nav-link" href="/admin/review">
-              Verify
-            </Link>
-          </>
-        ) : null}
-        {isAdmin ? (
-          <Link className="nav-link dev-nav-link" href="/dashboard/dev">
-            Dev
-          </Link>
-        ) : null}
-        {user ? (
-          <SignOutButton />
         ) : (
-          <Link className="button" href="/signin">
-            Sign in
+          <Link className="topbar-signin-btn" href="/signin">
+            Sign In
           </Link>
         )}
-      </nav>
+      </div>
     </header>
   );
 }

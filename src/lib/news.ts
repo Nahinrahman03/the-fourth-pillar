@@ -135,6 +135,29 @@ export async function getReviewQueue() {
   });
 }
 
+export async function getReviewMetrics() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [reviewedToday, totalSubmissions] = await Promise.all([
+    prisma.submission.count({
+      where: {
+        status: { in: [SubmissionStatus.APPROVED, SubmissionStatus.REJECTED] },
+        updatedAt: { gte: today }
+      }
+    }),
+    prisma.submission.count()
+  ]);
+
+  // Mock average wait time for now but based on real count
+  const waitTime = totalSubmissions > 50 ? "42M" : totalSubmissions > 10 ? "14M" : "4M";
+
+  return {
+    reviewedToday,
+    waitTime
+  };
+}
+
 export async function getPendingFlagQueue() {
   return prisma.newsFlag.findMany({
     where: {

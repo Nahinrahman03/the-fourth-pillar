@@ -9,38 +9,64 @@ type NewsCardProps = {
   item: NewsItem;
   isAdmin?: boolean;
   isLoggedIn?: boolean;
+  index?: number;
 };
 
-export function NewsCard({ item, isAdmin = false, isLoggedIn = false }: NewsCardProps) {
+const SCOPE_LABELS: Record<string, string> = {
+  INDIA: "India",
+  LOCAL: "Local",
+  WORLD: "World",
+};
+
+export function NewsCard({
+  item,
+  isAdmin = false,
+  isLoggedIn = false,
+  index = 0,
+}: NewsCardProps) {
   const points = summaryPointsFromUnknown(item.summaryPoints);
+  const scopeLabel = SCOPE_LABELS[item.scope] ?? item.scope;
 
   return (
-    <article className="news-card">
-      <div className="stack">
-        <div className="news-card-header">
-          <div className="meta-row">
-            <span className="mono-chip">{item.category}</span>
-            <span className="mono-chip">
-              {item.scope === "INDIA" ? "Indian" : item.scope === "LOCAL" ? "Local" : "World"}
-            </span>
+    <article className="news-card" style={{ animationDelay: `${index * 60}ms` }}>
+      {/* Header row: chips + actions */}
+      <div className="news-card-header">
+        <div className="meta-row">
+          <span className="cat-chip">{item.category}</span>
+          <span className="cat-chip scope-chip">{scopeLabel}</span>
+          <span className="time-stamp">
             <TimeAgo date={item.publishedAt} />
-          </div>
-          <div className="news-card-actions">
-            <FlagNewsButton newsId={item.id} isLoggedIn={isLoggedIn} />
-            {isAdmin ? <DeleteNewsButton headline={item.headline} newsId={item.id} /> : null}
-          </div>
+          </span>
         </div>
-        <h3 className="card-title">{item.headline}</h3>
+        <div className="news-card-actions">
+          <FlagNewsButton newsId={item.id} isLoggedIn={isLoggedIn} />
+          {isAdmin ? (
+            <DeleteNewsButton headline={item.headline} newsId={item.id} />
+          ) : null}
+        </div>
       </div>
 
+      {/* Headline */}
+      <h3 className="card-title">{item.headline}</h3>
+
+      {/* Summary points */}
       <ul className="summary-list">
-        {points.map((point, index) => (
-          <li key={`${item.id}-${index}`}>{point}</li>
+        {points.map((point, i) => (
+          <li key={`${item.id}-${i}`}>{point}</li>
         ))}
       </ul>
 
+      {/* Source link */}
       {item.sourceUrl ? (
-        <a className="utility-link" href={item.sourceUrl} rel="noreferrer" target="_blank">
+        <a
+          className="source-link"
+          href={item.sourceUrl}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M4 1H1v8h8V6M6 1h3m0 0v3M4.5 5.5L9 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
           Source Archive
         </a>
       ) : null}
