@@ -3199,6 +3199,87 @@ select {
   font-family: var(--mono);
 }
 
+/* ── Ad Slot Variants ───────────────────────────────────── */
+
+/* Top Banner — spans full width above the home-layout grid */
+.ad-slot--banner {
+  grid-column: 1 / -1;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  margin: -40px -48px 0;
+  width: calc(100% + 96px);
+}
+
+.ad-slot--banner .ad-slot-image {
+  aspect-ratio: 8 / 1;
+  object-fit: cover;
+  max-height: 120px;
+}
+
+.ad-slot--banner .ad-slot-placeholder {
+  aspect-ratio: auto;
+  flex-direction: row;
+  gap: 16px;
+  margin: 0;
+  padding: 14px 48px;
+  min-height: 56px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 2px dashed var(--line-strong);
+  background: var(--surface-mid);
+}
+
+.ad-slot--banner .ad-slot-placeholder-label {
+  font-size: 0.55rem;
+}
+
+.ad-slot--banner .ad-slot-placeholder-hint {
+  font-size: 0.5rem;
+  opacity: 0.4;
+}
+
+/* Inline Feed — card-style slot injected between news items */
+.ad-slot--inline {
+  background: var(--surface-low);
+  border: 1px dashed var(--line-strong);
+  margin: 0;
+}
+
+.ad-slot--inline .ad-slot-image {
+  aspect-ratio: 16 / 5;
+  object-fit: cover;
+}
+
+.ad-slot--inline .ad-slot-placeholder {
+  aspect-ratio: auto;
+  flex-direction: row;
+  gap: 16px;
+  padding: 18px 20px;
+  margin: 10px;
+  min-height: 64px;
+}
+
+.ad-slot--inline .ad-slot-placeholder-label {
+  font-size: 0.55rem;
+}
+
+.ad-slot--inline .ad-slot-placeholder-hint {
+  font-size: 0.48rem;
+  opacity: 0.4;
+}
+
+@media (max-width: 720px) {
+  .ad-slot--banner {
+    margin: -20px -16px 0;
+    width: calc(100% + 32px);
+  }
+
+  .ad-slot--banner .ad-slot-placeholder {
+    padding: 12px 16px;
+  }
+}
+
 /* ── Scope Quick-links widget ───────────────────────────── */
 .scope-links {
   display: flex;

@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -7,7 +8,7 @@ import { NewsStructuredData } from "@/components/news-structured-data";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildArchiveMetadata, getNewsBySort, type NewsSort } from "@/lib/news";
-import { MAIN_PAGE_AD } from "@/config/ads";
+import { MAIN_PAGE_AD, INLINE_FEED_AD, TOP_BANNER_AD } from "@/config/ads";
 
 type HomePageProps = {
   searchParams: Promise<{ q?: string; sort?: string }>;
@@ -73,6 +74,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <div className="home-layout">
+      {/* ── Top Banner Ad (admin preview / live for all when enabled) ── */}
+      <AdSlot ad={TOP_BANNER_AD} devPreview={isAdmin} className="ad-slot--banner" />
+
       {/* ── Main feed column ── */}
       <div className="feed-col">
         {/* Live briefing header */}
@@ -113,13 +117,18 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         <div className="archive-feed">
           {news.length > 0 ? (
             news.map((item, index) => (
-              <NewsCard
-                isAdmin={isAdmin}
-                isLoggedIn={isLoggedIn}
-                item={item}
-                key={item.id}
-                index={index}
-              />
+              <Fragment key={item.id}>
+                <NewsCard
+                  isAdmin={isAdmin}
+                  isLoggedIn={isLoggedIn}
+                  item={item}
+                  index={index}
+                />
+                {/* Inline feed ad — injected after every 6th card; only rendered when admin previewing or ad is live */}
+                {(index + 1) % 6 === 0 && (
+                  <AdSlot ad={INLINE_FEED_AD} devPreview={isAdmin} className="ad-slot--inline" />
+                )}
+              </Fragment>
             ))
           ) : (
             <div className="empty-state">
@@ -184,8 +193,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </div>
         </div>
 
-        {/* Developer-managed Ad Slot */}
-        <AdSlot ad={MAIN_PAGE_AD} />
+        {/* Sidebar Ad Slot — visible to admins always; normal users only see when enabled */}
+        <AdSlot ad={MAIN_PAGE_AD} devPreview={isAdmin} />
 
         {/* Scope quick-links */}
         <div className="widget-card">

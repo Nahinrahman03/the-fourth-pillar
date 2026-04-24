@@ -2,17 +2,31 @@ import type { AdConfig } from "@/config/ads";
 
 type AdSlotProps = {
   ad: AdConfig;
+  /**
+   * Pass `true` for admin/developer accounts so they always see the
+   * slot placeholder for layout reference. Normal users receive `false`
+   * and will only see the slot when `ad.enabled === true` and an
+   * `imageUrl` is set.
+   */
+  devPreview?: boolean;
+  /** Optional extra CSS class for the wrapper (e.g. "ad-slot--banner") */
+  className?: string;
 };
 
-export function AdSlot({ ad }: AdSlotProps) {
+export function AdSlot({ ad, devPreview = false, className }: AdSlotProps) {
+  const isLive = ad.enabled && !!ad.imageUrl;
+
+  // Normal users: hide the component entirely when no live ad is configured
+  if (!devPreview && !isLive) return null;
+
   return (
-    <div className="ad-slot">
+    <div className={`ad-slot${className ? ` ${className}` : ""}`}>
       <div className="ad-slot-header">
         <span>{ad.label || "Sponsored Intelligence"}</span>
         <span className="ad-slot-tag">AD</span>
       </div>
 
-      {ad.enabled && ad.imageUrl ? (
+      {isLive ? (
         <>
           <a
             href={ad.linkUrl || "#"}
@@ -46,7 +60,7 @@ export function AdSlot({ ad }: AdSlotProps) {
           )}
         </>
       ) : (
-        /* Placeholder shown when no ad is configured */
+        /* Developer-only placeholder — never shown to normal users */
         <div className="ad-slot-placeholder">
           <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
             <rect x="1" y="1" width="30" height="30" rx="1" stroke="currentColor" strokeWidth="1" strokeDasharray="4 3" />
