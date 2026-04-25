@@ -66,6 +66,26 @@ export default async function RootLayout({
       className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} ${inter.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-Q0KMZN41YY"
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-Q0KMZN41YY', {
+                page_path: window.location.pathname,
+              });
+            `,
+          }}
+        />
+      </head>
       <body>
         {/*
           Flash-of-wrong-theme prevention.

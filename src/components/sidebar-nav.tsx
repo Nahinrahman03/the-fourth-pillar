@@ -160,8 +160,7 @@ export function SidebarNav({ isLoggedIn, isAdmin }: SidebarNavProps) {
       >
         {/* Terminal label */}
         <div className="sidebar-label">
-          <strong>THE 4TH PILLAR</strong>
-          <span>TERMINAL v1.0</span>
+          <strong>THE FOURTH PILLAR</strong>
         </div>
 
         {/* Primary nav */}

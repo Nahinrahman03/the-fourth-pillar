@@ -2,6 +2,7 @@ import type { NewsItem } from "@prisma/client";
 
 import { DeleteNewsButton } from "@/components/delete-news-button";
 import { FlagNewsButton } from "@/components/flag-news-button";
+import { NewsTracker, TrackedSourceLink } from "@/components/news-tracker";
 import { TimeAgo } from "@/components/time-ago";
 import { summaryPointsFromUnknown } from "@/lib/utils";
 
@@ -28,7 +29,8 @@ export function NewsCard({
   const scopeLabel = SCOPE_LABELS[item.scope] ?? item.scope;
 
   return (
-    <article className="news-card" style={{ animationDelay: `${index * 60}ms` }}>
+    <article className="news-card" style={{ animationDelay: `${index * 60}ms`, position: "relative" }}>
+      <NewsTracker newsId={item.id} />
       {/* Header row: chips + actions */}
       <div className="news-card-header">
         <div className="meta-row">
@@ -58,17 +60,16 @@ export function NewsCard({
 
       {/* Source link */}
       {item.sourceUrl ? (
-        <a
-          className="source-link"
+        <TrackedSourceLink
+          newsId={item.id}
           href={item.sourceUrl}
-          rel="noreferrer"
-          target="_blank"
+          className="source-link"
         >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
             <path d="M4 1H1v8h8V6M6 1h3m0 0v3M4.5 5.5L9 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Source Archive
-        </a>
+        </TrackedSourceLink>
       ) : null}
     </article>
   );

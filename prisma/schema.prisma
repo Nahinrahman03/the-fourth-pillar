@@ -157,8 +157,11 @@ model NewsItem {
   approvedBy   User?    @relation("NewsApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
   submission   Submission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
   flags        NewsFlag[]
+  views        Int      @default(0)
+  clicks       Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  events       NewsEvent[]
 }
 
 model NewsFlag {
@@ -217,4 +220,32 @@ model AuthSession {
   createdAt DateTime @default(now())
 
   @@index([userId, expiresAt])
+}
+
+model Advertisement {
+  id        String   @id @default(cuid())
+  slotId    String   @unique // MAIN_PAGE_AD, INLINE_FEED_AD, TOP_BANNER_AD
+  enabled   Boolean  @default(false)
+  imageUrl  String   
+  linkUrl   String   
+  label     String   @default("Advertisement")
+  title     String?  
+  body      String?  
+  ctaText   String?  @default("Learn More →")
+  altText   String?  @default("Advertisement")
+  updatedAt DateTime @updatedAt
+}
+
+model NewsEvent {
+  id          String   @id @default(cuid())
+  newsItemId  String
+  eventType   String   // "VIEW" or "CLICK"
+  country     String?  // Optional country from headers
+  createdAt   DateTime @default(now())
+
+  newsItem    NewsItem @relation(fields: [newsItemId], references: [id], onDelete: Cascade)
+
+  @@index([newsItemId, eventType, createdAt])
+  @@index([createdAt])
+  @@index([country])
 }

@@ -60,6 +60,35 @@ function ContributionChart({ data }: { data: ChartData }) {
   );
 }
 
+/* ═══ Engagement Chart ═════════════════════════════════════ */
+function EngagementChart({ data }: { data: { labels: string[]; views: number[]; clicks: number[] } }) {
+  const max = Math.max(...data.views, ...data.clicks, 1);
+  const H = 130; const barW = 14; const gap = 4; const groupW = barW * 2 + gap + 10;
+  const totalW = data.labels.length * groupW;
+  return (
+    <div className="da-chart-scroll">
+      <svg className="da-chart-svg" viewBox={`0 0 ${totalW} ${H + 28}`} preserveAspectRatio="xMidYMid meet">
+        {data.labels.map((label, i) => {
+          const x = i * groupW;
+          const viewH = Math.max((data.views[i] / max) * H, 2);
+          const clickH = Math.max((data.clicks[i] / max) * H, 2);
+          return (
+            <g key={`${label}-${i}`}>
+              <rect x={x} y={H - viewH} width={barW} height={viewH} fill="#3d3d3d" rx="1" />
+              <rect x={x + barW + gap} y={H - clickH} width={barW} height={clickH} fill="#88c0d0" rx="1" />
+              {label ? (
+                <text x={x + barW} y={H + 18} textAnchor="middle" fontSize="8" fill="#5a6061" fontFamily="Inter,sans-serif" letterSpacing="0.08em">
+                  {label.toUpperCase()}
+                </text>
+              ) : null}
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 /* ═══ Gauge ════════════════════════════════════════════════ */
 function VelocityGauge({ value }: { value: number }) {
   const r = 48; const circ = 2 * Math.PI * r; const filled = Math.min(value / 100, 1) * circ;
@@ -230,6 +259,290 @@ function ContributionsSection({ router }: { router: ReturnType<typeof useRouter>
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ═══ Ads Section ══════════════════════════════════════════ */
+function AdsSection() {
+  const [ads, setAds] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingSlot, setEditingSlot] = useState<string | null>(null);
+
+  const SLOTS = [
+    { id: "TOP_BANNER_AD", name: "Top Banner Ad", desc: "Full-width banner below the site header" },
+    { id: "MAIN_PAGE_AD", name: "Sidebar Widget Ad", desc: "Right-column widget on the home feed" },
+    { id: "INLINE_FEED_AD", name: "Inline Feed Ad", desc: "Injected between news cards (every ~6 items)" },
+  ];
+
+  useEffect(() => { void fetchAds(); }, []);
+
+  async function fetchAds() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/ads");
+      const json = await res.json();
+      setAds(json.ads || []);
+    } finally { setLoading(false); }
+  }
+
+  async function handleSave(e: React.FormEvent<HTMLFormElement>, slotId: string) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const payload = {
+      slotId,
+      enabled: formData.get("enabled") === "true",
+      imageUrl: formData.get("imageUrl") as string,
+      linkUrl: formData.get("linkUrl") as string,
+      label: formData.get("label") as string,
+      title: formData.get("title") as string,
+      body: formData.get("body") as string,
+      ctaText: formData.get("ctaText") as string,
+      altText: formData.get("altText") as string,
+    };
+
+    try {
+      const res = await fetch("/api/admin/ads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        alert("Ad saved successfully!");
+        setEditingSlot(null);
+        void fetchAds();
+      } else alert("Failed to save.");
+    } catch { alert("Error saving ad."); }
+  }
+
+  return (
+    <div className="da-section">
+      <div className="da-section-header">
+        <div>
+          <h2 className="da-title">Advertisement Management</h2>
+          <p className="da-subtitle">Configure developer-managed ad slots across the application.</p>
+        </div>
+      </div>
+
+      <div className="da-recent-panel">
+        <div className="da-panel-header">
+          <h3 className="da-panel-title">Ad Slots</h3>
+        </div>
+        <div className="da-table" style={{ border: "none", background: "transparent" }}>
+          {SLOTS.map(slot => {
+            const ad = ads.find(a => a.slotId === slot.id) || {
+              enabled: false, imageUrl: "", linkUrl: "", label: "Sponsored", title: "", body: "", ctaText: "Learn More", altText: ""
+            };
+            const isEditing = editingSlot === slot.id;
+
+            return (
+              <div key={slot.id} className="widget-card" style={{ marginBottom: "1rem" }}>
+                <div className="widget-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <span style={{ fontSize: "16px", fontWeight: "bold" }}>{slot.name}</span>
+                    <span style={{ marginLeft: "10px", fontSize: "12px", color: "var(--muted)" }}>{slot.desc}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                    <span className={`da-status-chip ${ad.enabled ? "approved" : "rejected"}`}>
+                      {ad.enabled ? "LIVE" : "DISABLED"}
+                    </span>
+                    <button className="da-view-all" onClick={() => setEditingSlot(isEditing ? null : slot.id)} type="button">
+                      {isEditing ? "Cancel" : "Edit"}
+                    </button>
+                  </div>
+                </div>
+
+                {isEditing && (
+                  <form className="widget-body" onSubmit={e => handleSave(e, slot.id)} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                      <label style={{ color: "var(--foreground)", fontSize: "14px", fontWeight: "bold" }}>Status:</label>
+                      <select name="enabled" defaultValue={String(ad.enabled)} style={{ padding: "8px", background: "var(--bg)", color: "var(--foreground)", border: "1px solid var(--line)", borderRadius: "4px" }}>
+                        <option value="true">Enabled (Live)</option>
+                        <option value="false">Disabled (Placeholder)</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Image URL (Required)</label>
+                        <input type="text" name="imageUrl" defaultValue={ad.imageUrl} required placeholder="https://..." style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Destination Link URL</label>
+                        <input type="text" name="linkUrl" defaultValue={ad.linkUrl} required placeholder="https://..." style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Label (e.g. Sponsored)</label>
+                        <input type="text" name="label" defaultValue={ad.label} placeholder="Sponsored" style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Alt Text</label>
+                        <input type="text" name="altText" defaultValue={ad.altText} placeholder="Ad banner" style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Headline Title (Optional)</label>
+                        <input type="text" name="title" defaultValue={ad.title || ""} placeholder="Ad Headline" style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>CTA Text</label>
+                        <input type="text" name="ctaText" defaultValue={ad.ctaText || ""} placeholder="Learn More" style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                      <label style={{ fontSize: "12px", color: "var(--muted)" }}>Body Description (Optional)</label>
+                      <textarea name="body" defaultValue={ad.body || ""} placeholder="Description text..." rows={2} style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px", resize: "none" }} />
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                      <button className="submit-form-btn" type="submit" style={{ padding: "10px 20px", background: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}>
+                        Save Advertisement
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══ Engagement Section ═══════════════════════════════════ */
+function EngagementSection() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState("all");
+  const [country, setCountry] = useState("");
+
+  useEffect(() => {
+    void (async () => {
+      setLoading(true);
+      try {
+        const query = new URLSearchParams();
+        if (period !== "all") query.set("period", period);
+        if (country) query.set("country", country);
+        const res = await fetch(`/api/admin/engagement?${query.toString()}`);
+        const json = await res.json();
+        setData(json);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [period, country]);
+
+  if (loading && !data) return <div className="da-section-loading">Loading engagement data…</div>;
+  if (!data) return <div className="da-section-loading">Failed to load data.</div>;
+
+  const ctr = data.totalViews > 0 ? ((data.totalClicks / data.totalViews) * 100).toFixed(2) : "0.00";
+
+  return (
+    <div className="da-section">
+      <div className="da-section-header">
+        <div>
+          <h2 className="da-title">News Engagement Analytics</h2>
+          <p className="da-subtitle">Track which news items are getting the most attention, views, and source clicks.</p>
+        </div>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          {loading && <span style={{ fontSize: "12px", color: "var(--muted)" }}>Updating...</span>}
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            style={{ padding: "8px 12px", background: "var(--bg)", color: "var(--foreground)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "14px" }}
+          >
+            <option value="all">All Time</option>
+            <option value="year">Past Year</option>
+            <option value="month">Past Month</option>
+            <option value="day">Past 24 Hours</option>
+            <option value="hour">Past Hour</option>
+          </select>
+          <select
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+            style={{ padding: "8px 12px", background: "var(--bg)", color: "var(--foreground)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "14px" }}
+          >
+            <option value="">All Countries</option>
+            {data.availableCountries?.map((c: string) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="da-stats-row">
+        <div className="da-stat-box">
+          <p className="da-stat-label">TOTAL PLATFORM VIEWS</p>
+          <p className="da-stat-value">{data.totalViews.toLocaleString()}</p>
+        </div>
+        <div className="da-stat-box">
+          <p className="da-stat-label">SOURCE CLICKS</p>
+          <p className="da-stat-value">{data.totalClicks.toLocaleString()}</p>
+        </div>
+        <div className="da-stat-box">
+          <p className="da-stat-label">AVERAGE CTR</p>
+          <p className="da-stat-value">{ctr}%</p>
+        </div>
+      </div>
+
+      {data.chartData && (
+        <div className="da-chart-panel" style={{ marginTop: "24px" }}>
+          <div className="da-chart-header">
+            <h3 className="da-panel-title">Engagement Trends</h3>
+            <div className="da-legend">
+              <span className="da-legend-submissions" style={{ color: "#3d3d3d" }}>■ Views</span>
+              <span className="da-legend-verifications" style={{ color: "#88c0d0" }}>■ Clicks</span>
+            </div>
+          </div>
+          <EngagementChart data={data.chartData} />
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginTop: "24px" }}>
+        <div className="da-recent-panel">
+          <div className="da-panel-header">
+            <h3 className="da-panel-title">Most Viewed News</h3>
+          </div>
+          <div className="da-table" role="table">
+            <div className="da-table-head" style={{ gridTemplateColumns: "1fr 80px 80px" }}>
+              <span>HEADLINE</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>CLICKS</span>
+            </div>
+            {data.mostViewed.length > 0 ? data.mostViewed.map((item: any) => (
+              <div className="da-table-row" style={{ gridTemplateColumns: "1fr 80px 80px" }} key={item.id}>
+                <span title={item.headline} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <span className="da-status-chip approved" style={{ marginRight: "8px", fontSize: "10px" }}>{item.category}</span>
+                  {item.headline}
+                </span>
+                <span style={{ textAlign: "right", fontWeight: "bold" }}>{item.views.toLocaleString()}</span>
+                <span style={{ textAlign: "right", color: "var(--muted)" }}>{item.clicks.toLocaleString()}</span>
+              </div>
+            )) : <div className="da-table-empty">No data available for this filter.</div>}
+          </div>
+        </div>
+
+        <div className="da-recent-panel">
+          <div className="da-panel-header">
+            <h3 className="da-panel-title">Least Viewed News</h3>
+          </div>
+          <div className="da-table" role="table">
+            <div className="da-table-head" style={{ gridTemplateColumns: "1fr 80px 80px" }}>
+              <span>HEADLINE</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>CLICKS</span>
+            </div>
+            {data.leastViewed.length > 0 ? data.leastViewed.map((item: any) => (
+              <div className="da-table-row" style={{ gridTemplateColumns: "1fr 80px 80px" }} key={item.id}>
+                <span title={item.headline} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <span className="da-status-chip pending" style={{ marginRight: "8px", fontSize: "10px" }}>{item.category}</span>
+                  {item.headline}
+                </span>
+                <span style={{ textAlign: "right", fontWeight: "bold" }}>{item.views.toLocaleString()}</span>
+                <span style={{ textAlign: "right", color: "var(--muted)" }}>{item.clicks.toLocaleString()}</span>
+              </div>
+            )) : <div className="da-table-empty">No data available for this filter.</div>}
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -553,7 +866,7 @@ function SecuritySection({ stats, security, router }: { stats: Stats; security: 
 }
 
 /* ═══ Root Dashboard ════════════════════════════════════════ */
-const NAV_TOP = ["Overview", "Users", "Contributions", "System Health"];
+const NAV_TOP = ["Overview", "Users", "Contributions", "Engagement", "Advertisements", "System Health"];
 const NAV_BOT = ["Security"];
 type NavSection = string;
 
@@ -599,11 +912,13 @@ export function DevDashboard({ initial }: { initial: AnalyticsPayload }) {
 
   const navIcon = (item: string) =>
     item === "Overview" ? "⊞" : item === "Users" ? "◯" : item === "Contributions" ? "≡" :
-    item === "System Health" ? "⬡" : item === "Security" ? "⬡" : "⚿";
+    item === "Engagement" ? "📈" : item === "Advertisements" ? "🪧" : item === "System Health" ? "⬡" : item === "Security" ? "⬡" : "⚿";
 
   function renderMain() {
     if (activeNav === "Users") return <UsersSection router={router} />;
     if (activeNav === "Contributions") return <ContributionsSection router={router} />;
+    if (activeNav === "Engagement") return <EngagementSection />;
+    if (activeNav === "Advertisements") return <AdsSection />;
     if (activeNav === "System Health") return <SystemHealthSection stats={data.stats} security={data.security} />;
     if (activeNav === "Security") return <SecuritySection stats={data.stats} security={data.security} router={router} />;
     // Overview

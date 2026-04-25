@@ -63,19 +63,28 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const sort = resolveSort(rawSort);
   const isSearching = query.length >= 2;
 
-  const [news, user] = await Promise.all([
+  const [news, user, dbAds] = await Promise.all([
     isSearching ? searchNews(query) : getNewsBySort(sort),
     getCurrentUser(),
+    prisma.advertisement.findMany(),
   ]);
+
+  const getAd = (slotId: string, defaultAd: any) => {
+    const dbAd = dbAds.find((a: any) => a.slotId === slotId);
+    return dbAd ? { ...defaultAd, ...dbAd } : defaultAd;
+  };
+
+  const topBannerAd = getAd("TOP_BANNER_AD", TOP_BANNER_AD);
+  const mainPageAd = getAd("MAIN_PAGE_AD", MAIN_PAGE_AD);
+  const inlineFeedAd = getAd("INLINE_FEED_AD", INLINE_FEED_AD);
 
   const isLoggedIn = !!user;
   const isAdmin = user?.role === "ADMIN";
-  const now = new Date();
 
   return (
     <div className="home-layout">
       {/* ── Top Banner Ad (admin preview / live for all when enabled) ── */}
-      <AdSlot ad={TOP_BANNER_AD} devPreview={isAdmin} className="ad-slot--banner" />
+      <AdSlot ad={topBannerAd} devPreview={isAdmin} className="ad-slot--banner" />
 
       {/* ── Main feed column ── */}
       <div className="feed-col">
@@ -126,7 +135,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 />
                 {/* Inline feed ad — injected after every 6th card; only rendered when admin previewing or ad is live */}
                 {(index + 1) % 6 === 0 && (
-                  <AdSlot ad={INLINE_FEED_AD} devPreview={isAdmin} className="ad-slot--inline" />
+                  <AdSlot ad={inlineFeedAd} devPreview={isAdmin} className="ad-slot--inline" />
                 )}
               </Fragment>
             ))
@@ -161,40 +170,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       {/* ── Right widget column ── */}
       <aside className="widget-col" aria-label="Sidebar widgets">
-        {/* System Status */}
-        <div className="widget-card">
-          <div className="widget-header">
-            <span>System Status</span>
-            <span className="widget-header-dot" aria-hidden="true" />
-          </div>
-          <div className="widget-body">
-            <div className="status-row">
-              <span className="status-label">Stream</span>
-              <span className="status-value green">ACTIVE</span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Coverage</span>
-              <span className="status-value elevated">ELEVATED</span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Stories Live</span>
-              <span className="status-value">{news.length}</span>
-            </div>
-            <div className="status-row">
-              <span className="status-label">Last Updated</span>
-              <span className="status-value mono-time">
-                {now.toLocaleTimeString("en-IN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: false,
-                })}
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Sidebar Ad Slot — visible to admins always; normal users only see when enabled */}
-        <AdSlot ad={MAIN_PAGE_AD} devPreview={isAdmin} />
+        <AdSlot ad={mainPageAd} devPreview={isAdmin} />
 
         {/* Scope quick-links */}
         <div className="widget-card">
