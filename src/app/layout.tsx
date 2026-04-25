@@ -38,6 +38,9 @@ export const metadata: Metadata = {
   },
   description: "Live intelligence briefings. News in 5 points — Local, Indian, and World coverage.",
   keywords: ["news in 5 points", "quick news today", "short news India", "live briefing"],
+  verification: {
+    google: "ujh06HC8fVbHas763cj12SgA0pcitKeOfqbguShMYS4",
+  },
   openGraph: {
     title: "The Fourth Pillar",
     description: "Live intelligence briefings. News in 5 points.",
