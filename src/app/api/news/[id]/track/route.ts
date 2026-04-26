@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getCurrentUser, isElevatedRole } from "@/lib/auth";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -7,7 +8,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const body = await req.json();
     const type = body.type; // "view" or "click"
 
-    const country = req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "Unknown";
+    const country =
+      req.headers.get("x-country-code") || // Netlify
+      req.headers.get("x-vercel-ip-country") || // Vercel
+      req.headers.get("cf-ipcountry") || // Cloudflare
+      "Unknown";
+
+    // ── Skip tracking if user is a Developer/Admin ──
+    const user = await getCurrentUser();
+    if (user && isElevatedRole(user.role)) {
+      return NextResponse.json({ success: true, skipped: true, reason: "developer_view" });
+    }
 
     if (type === "view") {
       await prisma.newsItem.update({

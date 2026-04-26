@@ -9,7 +9,31 @@ export async function GET() {
   }
 
   const ads = await prisma.advertisement.findMany();
-  return NextResponse.json({ ads });
+
+  // Aggregate platform-wide engagement for ad performance context
+  const [totalViews, totalClicks, totalNews, liveAds] = await Promise.all([
+    prisma.newsItem.aggregate({ _sum: { views: true } }),
+    prisma.newsItem.aggregate({ _sum: { clicks: true } }),
+    prisma.newsItem.count(),
+    prisma.advertisement.count({ where: { enabled: true } }),
+  ]);
+
+  const platformViews = totalViews._sum.views ?? 0;
+  const platformClicks = totalClicks._sum.clicks ?? 0;
+  const platformCTR = platformViews > 0
+    ? ((platformClicks / platformViews) * 100).toFixed(2)
+    : "0.00";
+
+  return NextResponse.json({
+    ads,
+    metrics: {
+      platformViews,
+      platformClicks,
+      platformCTR,
+      totalNews,
+      liveAds,
+    },
+  });
 }
 
 export async function POST(req: Request) {
@@ -32,4 +56,17 @@ export async function POST(req: Request) {
   });
 
   return NextResponse.json({ ad });
+}
+
+export async function DELETE(req: Request) {
+  const user = await requireUser();
+  if (!isElevatedRole(user.role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { slotId } = await req.json() as { slotId: string };
+  if (!slotId) return NextResponse.json({ error: "Missing slotId" }, { status: 400 });
+
+  await prisma.advertisement.deleteMany({ where: { slotId } });
+  return NextResponse.json({ success: true });
 }

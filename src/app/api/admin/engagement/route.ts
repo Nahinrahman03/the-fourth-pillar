@@ -172,13 +172,44 @@ export async function GET(req: Request) {
     clicks: new Array(buckets.length).fill(0)
   };
 
-  await Promise.all(buckets.map(async (b, i) => {
-    const w: any = { createdAt: { gte: b.start, lt: b.end } };
-    if (country) w.country = country;
-    
-    chartData.views[i] = await prisma.newsEvent.count({ where: { ...w, eventType: "VIEW" } });
-    chartData.clicks[i] = await prisma.newsEvent.count({ where: { ...w, eventType: "CLICK" } });
-  }));
+  // Single query per event type — bucket in memory instead of N DB round-trips
+  if (buckets.length > 0) {
+    const rangeStart = buckets[0].start;
+    const rangeEnd   = buckets[buckets.length - 1].end;
+    const baseWhere: any = { createdAt: { gte: rangeStart, lt: rangeEnd } };
+    if (country) baseWhere.country = country;
+
+    const [viewEvents, clickEvents] = await Promise.all([
+      prisma.newsEvent.findMany({
+        where: { ...baseWhere, eventType: "VIEW" },
+        select: { createdAt: true },
+      }),
+      prisma.newsEvent.findMany({
+        where: { ...baseWhere, eventType: "CLICK" },
+        select: { createdAt: true },
+      }),
+    ]);
+
+    for (const ev of viewEvents) {
+      const ts = ev.createdAt.getTime();
+      for (let i = 0; i < buckets.length; i++) {
+        if (ts >= buckets[i].start.getTime() && ts < buckets[i].end.getTime()) {
+          chartData.views[i]++;
+          break;
+        }
+      }
+    }
+
+    for (const ev of clickEvents) {
+      const ts = ev.createdAt.getTime();
+      for (let i = 0; i < buckets.length; i++) {
+        if (ts >= buckets[i].start.getTime() && ts < buckets[i].end.getTime()) {
+          chartData.clicks[i]++;
+          break;
+        }
+      }
+    }
+  }
 
   return NextResponse.json({
     totalViews,

@@ -44,11 +44,12 @@ function ContributionChart({ data }: { data: ChartData }) {
           const subH = Math.max((data.submissions[i] / max) * H, 2);
           const verH = Math.max((data.verifications[i] / max) * H, 2);
           return (
-            <g key={`${label}-${i}`}>
-              <rect x={x} y={H - subH} width={barW} height={subH} fill="#3d3d3d" rx="1" />
-              <rect x={x + barW + gap} y={H - verH} width={barW} height={verH} fill="#d0d5d5" rx="1" />
+            <g key={`${label}-${i}`} style={{ cursor: "crosshair" }}>
+              <title>{`${label ? label.toUpperCase() : "Unknown"}\nSubmissions: ${data.submissions[i].toLocaleString()}\nVerifications: ${data.verifications[i].toLocaleString()}`}</title>
+              <rect x={x} y={H - subH} width={barW} height={subH} fill="var(--surface-high)" rx="1" style={{ transition: "fill 0.2s" }} />
+              <rect x={x + barW + gap} y={H - verH} width={barW} height={verH} fill="var(--primary)" rx="1" style={{ transition: "fill 0.2s" }} />
               {label ? (
-                <text x={x + barW} y={H + 18} textAnchor="middle" fontSize="8" fill="#5a6061" fontFamily="Inter,sans-serif" letterSpacing="0.08em">
+                <text x={x + barW} y={H + 18} textAnchor="middle" fontSize="8" fill="var(--ink-soft)" fontFamily="Inter,sans-serif" letterSpacing="0.08em">
                   {label.toUpperCase()}
                 </text>
               ) : null}
@@ -73,11 +74,12 @@ function EngagementChart({ data }: { data: { labels: string[]; views: number[]; 
           const viewH = Math.max((data.views[i] / max) * H, 2);
           const clickH = Math.max((data.clicks[i] / max) * H, 2);
           return (
-            <g key={`${label}-${i}`}>
-              <rect x={x} y={H - viewH} width={barW} height={viewH} fill="#3d3d3d" rx="1" />
-              <rect x={x + barW + gap} y={H - clickH} width={barW} height={clickH} fill="#88c0d0" rx="1" />
+            <g key={`${label}-${i}`} style={{ cursor: "crosshair" }}>
+              <title>{`${label ? label.toUpperCase() : "Unknown"}\nViews: ${data.views[i].toLocaleString()}\nClicks: ${data.clicks[i].toLocaleString()}`}</title>
+              <rect x={x} y={H - viewH} width={barW} height={viewH} fill="var(--surface-high)" rx="1" style={{ transition: "fill 0.2s" }} />
+              <rect x={x + barW + gap} y={H - clickH} width={barW} height={clickH} fill="var(--accent-green)" rx="1" style={{ transition: "fill 0.2s" }} />
               {label ? (
-                <text x={x + barW} y={H + 18} textAnchor="middle" fontSize="8" fill="#5a6061" fontFamily="Inter,sans-serif" letterSpacing="0.08em">
+                <text x={x + barW} y={H + 18} textAnchor="middle" fontSize="8" fill="var(--ink-soft)" fontFamily="Inter,sans-serif" letterSpacing="0.08em">
                   {label.toUpperCase()}
                 </text>
               ) : null}
@@ -100,7 +102,7 @@ function VelocityGauge({ value }: { value: number }) {
           strokeDasharray={`${filled} ${circ}`} strokeLinecap="round" transform="rotate(-90 65 65)"
           style={{ transition: "stroke-dasharray 600ms ease" }} />
         <text x="65" y="60" textAnchor="middle" fontSize="20" fontWeight="800" fill="#2d3435" fontFamily="Work Sans,Arial Black,sans-serif">{value}%</text>
-        <text x="65" y="76" textAnchor="middle" fontSize="8" fill="#5a6061" letterSpacing="2">TARGET</text>
+        <text x="65" y="76" textAnchor="middle" fontSize="8" fill="var(--ink-soft)" letterSpacing="2">TARGET</text>
       </svg>
     </div>
   );
@@ -266,13 +268,24 @@ function ContributionsSection({ router }: { router: ReturnType<typeof useRouter>
 /* ═══ Ads Section ══════════════════════════════════════════ */
 function AdsSection() {
   const [ads, setAds] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
+  const [activePlan, setActivePlan] = useState("standard");
+  const [roi, setRoi] = useState({ budget: 500, cpm: 2.5, ctr: 1.2 });
+  const [activeTab, setActiveTab] = useState<"slots" | "plans" | "evaluator">("slots");
 
   const SLOTS = [
-    { id: "TOP_BANNER_AD", name: "Top Banner Ad", desc: "Full-width banner below the site header" },
-    { id: "MAIN_PAGE_AD", name: "Sidebar Widget Ad", desc: "Right-column widget on the home feed" },
-    { id: "INLINE_FEED_AD", name: "Inline Feed Ad", desc: "Injected between news cards (every ~6 items)" },
+    { id: "TOP_BANNER_AD",    name: "Top Banner",     icon: "▬", desc: "Full-width banner below site header",        reach: "High" },
+    { id: "MAIN_PAGE_AD",     name: "Sidebar Widget", icon: "◧", desc: "Right-column widget on home feed",           reach: "Medium" },
+    { id: "INLINE_FEED_AD",   name: "Inline Feed",    icon: "≡", desc: "Injected between news cards (~6 items)",     reach: "High" },
+  ];
+
+  const PLANS = [
+    { id: "free",       name: "Free",       price: 0,    slots: 0, color: "var(--ink-soft)", badge: null,         features: ["No ad slots", "No analytics", "Community support"] },
+    { id: "standard",   name: "Standard",   price: 49,   slots: 1, color: "var(--accent-green)", badge: "Popular",    features: ["1 active slot", "Basic analytics", "Email support", "Image ads"] },
+    { id: "pro",        name: "Pro",        price: 149,  slots: 3, color: "var(--primary)", badge: "Best Value", features: ["All 3 slots", "Full analytics + CTR", "Priority support", "Custom CTA & body"] },
+    { id: "enterprise", name: "Enterprise", price: null, slots: 3, color: "var(--primary-dim)", badge: "Custom",     features: ["Unlimited slots", "Dedicated manager", "Custom integrations", "SLA guarantee"] },
   ];
 
   useEffect(() => { void fetchAds(); }, []);
@@ -280,135 +293,375 @@ function AdsSection() {
   async function fetchAds() {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/ads");
+      const res  = await fetch("/api/admin/ads");
       const json = await res.json();
       setAds(json.ads || []);
+      setMetrics(json.metrics || null);
     } finally { setLoading(false); }
   }
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>, slotId: string) {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const fd = new FormData(e.currentTarget);
     const payload = {
       slotId,
-      enabled: formData.get("enabled") === "true",
-      imageUrl: formData.get("imageUrl") as string,
-      linkUrl: formData.get("linkUrl") as string,
-      label: formData.get("label") as string,
-      title: formData.get("title") as string,
-      body: formData.get("body") as string,
-      ctaText: formData.get("ctaText") as string,
-      altText: formData.get("altText") as string,
+      enabled:  fd.get("enabled") === "true",
+      imageUrl: fd.get("imageUrl") as string,
+      linkUrl:  fd.get("linkUrl")  as string,
+      label:    fd.get("label")    as string,
+      title:    fd.get("title")    as string,
+      body:     fd.get("body")     as string,
+      ctaText:  fd.get("ctaText")  as string,
+      altText:  fd.get("altText")  as string,
     };
-
-    try {
-      const res = await fetch("/api/admin/ads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        alert("Ad saved successfully!");
-        setEditingSlot(null);
-        void fetchAds();
-      } else alert("Failed to save.");
-    } catch { alert("Error saving ad."); }
+    const res = await fetch("/api/admin/ads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) { setEditingSlot(null); void fetchAds(); }
+    else alert("Failed to save.");
   }
+
+  async function handleClear(slotId: string) {
+    if (!confirm("Clear this ad slot? This removes all saved data for it.")) return;
+    await fetch("/api/admin/ads", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slotId }),
+    });
+    void fetchAds();
+  }
+
+  const estimatedImpressions = Math.round((roi.budget / roi.cpm) * 1000);
+  const estimatedClicks      = Math.round(estimatedImpressions * (roi.ctr / 100));
+  const estimatedCPC         = roi.budget > 0 && estimatedClicks > 0
+    ? (roi.budget / estimatedClicks).toFixed(2) : "—";
+  const liveCount = ads.filter(a => a.enabled).length;
+
+  const TABS: { id: "slots" | "plans" | "evaluator"; label: string }[] = [
+    { id: "slots",     label: "🪧 Ad Slots" },
+    { id: "plans",     label: "⬆ Upgrade Plans" },
+    { id: "evaluator", label: "📊 ROI Evaluator" },
+  ];
+
+  const COMPARE_ROWS: [string, string, string, string, string][] = [
+    ["Ad Slots",              "0",     "1",       "3",        "∞"],
+    ["Banner Placement",      "✕",     "✕",       "✓",        "✓"],
+    ["Sidebar Widget",        "✕",     "✓",       "✓",        "✓"],
+    ["Inline Feed Injection", "✕",     "✕",       "✓",        "✓"],
+    ["CTR Analytics",         "✕",     "Basic",   "Full",     "Full"],
+    ["Custom CTA & Body",     "✕",     "✕",       "✓",        "✓"],
+    ["Support Level",         "Community","Email","Priority", "Dedicated"],
+    ["SLA Guarantee",         "✕",     "✕",       "✕",        "✓"],
+  ];
+
+  const ROI_SLIDERS = [
+    { label: "Monthly Budget (USD)", key: "budget" as const, min: 50,  max: 5000, step: 50,  unit: "$" },
+    { label: "CPM Rate",             key: "cpm"    as const, min: 0.5, max: 20,   step: 0.5, unit: "$" },
+    { label: "Expected CTR",         key: "ctr"    as const, min: 0.1, max: 10,   step: 0.1, unit: "%" },
+  ];
+
+  const recommendation =
+    roi.budget < 100  ? { plan: "Free",       text: "Budget is below the recommended minimum. Try the Standard plan at $49/mo for a single slot with basic analytics." }
+    : roi.budget < 300 ? { plan: "Standard",   text: "Good starting point. The Standard plan covers a sidebar widget. Monitor CTR weekly and scale to Pro when ready." }
+    : roi.budget < 1000? { plan: "Pro",         text: "Pro plan recommended — all 3 slots (banner, sidebar, inline) for full-funnel coverage across every news category." }
+    :                    { plan: "Enterprise",  text: "High-volume campaign. Enterprise gives custom integrations, a dedicated account manager, and SLA uptime guarantees." };
 
   return (
     <div className="da-section">
+      {/* ── Header ───────────────────────────────────────────── */}
       <div className="da-section-header">
         <div>
           <h2 className="da-title">Advertisement Management</h2>
-          <p className="da-subtitle">Configure developer-managed ad slots across the application.</p>
+          <p className="da-subtitle">Manage ad slots, compare upgrade plans, and evaluate campaign ROI.</p>
         </div>
+        {metrics && (
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <span style={{ fontSize: "12px", color: "var(--muted)" }}>Platform CTR</span>
+            <span style={{ fontSize: "20px", fontWeight: "bold" }}>{metrics.platformCTR}%</span>
+          </div>
+        )}
       </div>
 
-      <div className="da-recent-panel">
-        <div className="da-panel-header">
-          <h3 className="da-panel-title">Ad Slots</h3>
+      {/* ── Stats row ────────────────────────────────────────── */}
+      {metrics && (
+        <div className="da-stats-row">
+          <div className="da-stat-box">
+            <p className="da-stat-label">PLATFORM VIEWS</p>
+            <p className="da-stat-value">{metrics.platformViews.toLocaleString()}</p>
+          </div>
+          <div className="da-stat-box">
+            <p className="da-stat-label">PLATFORM CLICKS</p>
+            <p className="da-stat-value">{metrics.platformClicks.toLocaleString()}</p>
+          </div>
+          <div className="da-stat-box">
+            <p className="da-stat-label">LIVE AD SLOTS</p>
+            <p className="da-stat-value">
+              {liveCount}
+              <span className="da-stat-badge">{liveCount > 0 ? "active" : "none live"}</span>
+            </p>
+          </div>
+          <div className="da-stat-box">
+            <p className="da-stat-label">TOTAL ARTICLES</p>
+            <p className="da-stat-value">{metrics.totalNews.toLocaleString()}</p>
+          </div>
         </div>
-        <div className="da-table" style={{ border: "none", background: "transparent" }}>
-          {SLOTS.map(slot => {
-            const ad = ads.find(a => a.slotId === slot.id) || {
-              enabled: false, imageUrl: "", linkUrl: "", label: "Sponsored", title: "", body: "", ctaText: "Learn More", altText: ""
-            };
-            const isEditing = editingSlot === slot.id;
+      )}
 
-            return (
-              <div key={slot.id} className="widget-card" style={{ marginBottom: "1rem" }}>
-                <div className="widget-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <span style={{ fontSize: "16px", fontWeight: "bold" }}>{slot.name}</span>
-                    <span style={{ marginLeft: "10px", fontSize: "12px", color: "var(--muted)" }}>{slot.desc}</span>
-                  </div>
-                  <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                    <span className={`da-status-chip ${ad.enabled ? "approved" : "rejected"}`}>
-                      {ad.enabled ? "LIVE" : "DISABLED"}
-                    </span>
-                    <button className="da-view-all" onClick={() => setEditingSlot(isEditing ? null : slot.id)} type="button">
-                      {isEditing ? "Cancel" : "Edit"}
-                    </button>
-                  </div>
-                </div>
+      {/* ── Tab bar ──────────────────────────────────────────── */}
+      <div style={{ display: "flex", gap: "2px", borderBottom: "1px solid var(--line)", marginBottom: "24px" }}>
+        {TABS.map(t => (
+          <button key={t.id} type="button" onClick={() => setActiveTab(t.id)}
+            style={{
+              padding: "10px 20px", background: "none", border: "none",
+              borderBottom: activeTab === t.id ? "2px solid var(--ink)" : "2px solid transparent",
+              color: activeTab === t.id ? "var(--ink)" : "var(--muted)",
+              fontWeight: activeTab === t.id ? "bold" : "normal",
+              cursor: "pointer", fontSize: "13px", letterSpacing: "0.04em",
+              textTransform: "uppercase", transition: "all 0.2s",
+            }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-                {isEditing && (
-                  <form className="widget-body" onSubmit={e => handleSave(e, slot.id)} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                    <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-                      <label style={{ color: "var(--foreground)", fontSize: "14px", fontWeight: "bold" }}>Status:</label>
-                      <select name="enabled" defaultValue={String(ad.enabled)} style={{ padding: "8px", background: "var(--bg)", color: "var(--foreground)", border: "1px solid var(--line)", borderRadius: "4px" }}>
-                        <option value="true">Enabled (Live)</option>
-                        <option value="false">Disabled (Placeholder)</option>
-                      </select>
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Image URL (Required)</label>
-                        <input type="text" name="imageUrl" defaultValue={ad.imageUrl} required placeholder="https://..." style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Destination Link URL</label>
-                        <input type="text" name="linkUrl" defaultValue={ad.linkUrl} required placeholder="https://..." style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Label (e.g. Sponsored)</label>
-                        <input type="text" name="label" defaultValue={ad.label} placeholder="Sponsored" style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Alt Text</label>
-                        <input type="text" name="altText" defaultValue={ad.altText} placeholder="Ad banner" style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>Headline Title (Optional)</label>
-                        <input type="text" name="title" defaultValue={ad.title || ""} placeholder="Ad Headline" style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <label style={{ fontSize: "12px", color: "var(--muted)" }}>CTA Text</label>
-                        <input type="text" name="ctaText" defaultValue={ad.ctaText || ""} placeholder="Learn More" style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px" }} />
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* TAB: Ad Slots                                         */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {activeTab === "slots" && (
+        <div className="da-recent-panel">
+          <div className="da-panel-header">
+            <h3 className="da-panel-title">Configured Slots ({liveCount}/3 live)</h3>
+            {loading && <span className="da-view-all">Refreshing…</span>}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "16px" }}>
+            {SLOTS.map(slot => {
+              const ad = ads.find(a => a.slotId === slot.id) ?? {
+                enabled: false, imageUrl: "", linkUrl: "", label: "Sponsored",
+                title: "", body: "", ctaText: "Learn More", altText: "",
+              };
+              const isEditing = editingSlot === slot.id;
+              return (
+                <div key={slot.id} style={{
+                  border: "1px solid var(--line)", borderRadius: "8px", overflow: "hidden",
+                  background: ad.enabled ? "var(--surface-mid)" : "var(--bg)",
+                }}>
+                  {/* Slot header row */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 18px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <span style={{ fontSize: "22px" }}>{slot.icon}</span>
+                      <div>
+                        <span style={{ fontSize: "15px", fontWeight: "bold" }}>{slot.name}</span>
+                        <span style={{ marginLeft: "10px", fontSize: "12px", color: "var(--muted)" }}>{slot.desc}</span>
                       </div>
                     </div>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                      <label style={{ fontSize: "12px", color: "var(--muted)" }}>Body Description (Optional)</label>
-                      <textarea name="body" defaultValue={ad.body || ""} placeholder="Description text..." rows={2} style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--foreground)", borderRadius: "4px", resize: "none" }} />
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                      <button className="submit-form-btn" type="submit" style={{ padding: "10px 20px", background: "var(--accent)", color: "var(--bg)", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}>
-                        Save Advertisement
+                    <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                      <span style={{ fontSize: "11px", color: "var(--muted)", border: "1px solid var(--line)", padding: "2px 8px", borderRadius: "4px" }}>
+                        Reach: {slot.reach}
+                      </span>
+                      <span className={`da-status-chip ${ad.enabled ? "approved" : "rejected"}`}>
+                        {ad.enabled ? "LIVE" : "OFF"}
+                      </span>
+                      {ad.imageUrl && (
+                        <button className="da-view-all" onClick={() => handleClear(slot.id)} type="button"
+                          style={{ color: "var(--muted)" }}>
+                          Clear
+                        </button>
+                      )}
+                      <button className="da-view-all" onClick={() => setEditingSlot(isEditing ? null : slot.id)} type="button">
+                        {isEditing ? "Cancel" : "Edit"}
                       </button>
                     </div>
-                  </form>
-                )}
-              </div>
-            );
-          })}
+                  </div>
+
+                  {/* Edit form */}
+                  {isEditing && (
+                    <form style={{ display: "flex", flexDirection: "column", gap: "0", borderTop: "1px solid var(--line)" }}
+                      onSubmit={e => handleSave(e, slot.id)}>
+
+                      {/* ── Sticky save toolbar ── always visible at top of form */}
+                      <div style={{
+                        position: "sticky", top: 0, zIndex: 10,
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "12px 20px",
+                        background: "var(--bg)",
+                        borderBottom: "1px solid var(--line)",
+                        backdropFilter: "blur(8px)",
+                      }}>
+                        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                          <label style={{ fontSize: "13px", fontWeight: "bold", minWidth: "56px", color: "var(--ink)" }}>Status</label>
+                          <select name="enabled" defaultValue={String(ad.enabled)}
+                            style={{ padding: "7px 12px", background: "var(--bg)", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "13px" }}>
+                            <option value="true">✓ Enabled — Go Live</option>
+                            <option value="false">✕ Disabled — Keep Hidden</option>
+                          </select>
+                        </div>
+                        <button type="submit" style={{
+                          padding: "10px 28px",
+                          background: "var(--primary)", color: "#ffffff",
+                          border: "none", borderRadius: "4px",
+                          fontWeight: "bold", cursor: "pointer", fontSize: "13px",
+                          letterSpacing: "0.03em",
+                        }}>
+                          💾 Save &amp; Go Live
+                        </button>
+                      </div>
+
+                      {/* ── Field grid ── */}
+                      <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "16px" }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+                          {([
+                            ["imageUrl", "Image URL (required)", "https://cdn.example.com/ad.png", true],
+                            ["linkUrl",  "Destination URL",       "https://example.com",             true],
+                            ["label",   "Slot Label",             "Sponsored",                       false],
+                            ["altText", "Alt Text",               "Ad banner",                       false],
+                            ["title",   "Headline (optional)",    "Ad Headline",                     false],
+                            ["ctaText", "CTA Text",               "Learn More →",                    false],
+                          ] as [string, string, string, boolean][]).map(([n, l, ph, req]) => (
+                            <div key={n} style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                              <label style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{l}</label>
+                              <input type="text" name={n} defaultValue={ad[n] || ""} placeholder={ph} required={req}
+                                style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--ink)", borderRadius: "4px", fontSize: "13px" }} />
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                          <label style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Body Description (optional)</label>
+                          <textarea name="body" defaultValue={ad.body || ""} placeholder="Short ad description…" rows={2}
+                            style={{ padding: "10px", background: "var(--bg)", border: "1px solid var(--line)", color: "var(--ink)", borderRadius: "4px", resize: "none", fontSize: "13px" }} />
+                        </div>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* TAB: Upgrade Plans                                    */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {activeTab === "plans" && (
+        <div>
+          {/* Plan cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: "16px", marginBottom: "28px" }}>
+            {PLANS.map(plan => (
+              <div key={plan.id} onClick={() => setActivePlan(plan.id)}
+                style={{
+                  border: activePlan === plan.id ? "2px solid var(--ink)" : "1px solid var(--line)",
+                  borderRadius: "10px", padding: "20px 18px", cursor: "pointer",
+                  background: activePlan === plan.id ? "var(--surface-mid)" : "var(--bg)",
+                  transition: "all 0.2s", position: "relative",
+                }}>
+                {plan.badge && (
+                  <span style={{ position: "absolute", top: "-10px", right: "12px", background: plan.color, color: "var(--bg)", fontSize: "10px", padding: "2px 8px", borderRadius: "10px", fontWeight: "bold" }}>
+                    {plan.badge}
+                  </span>
+                )}
+                <p style={{ fontSize: "11px", color: "var(--muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "6px" }}>{plan.name}</p>
+                <p style={{ fontSize: "26px", fontWeight: "900", color: plan.color, marginBottom: "4px" }}>
+                  {plan.price === null ? "Custom" : plan.price === 0 ? "Free" : `$${plan.price}/mo`}
+                </p>
+                <p style={{ fontSize: "12px", color: "var(--muted)", marginBottom: "14px" }}>
+                  {plan.slots === 0 ? "No ad slots" : `${plan.slots} slot${plan.slots > 1 ? "s" : ""} included`}
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {plan.features.map(f => (
+                    <li key={f} style={{ fontSize: "12px", display: "flex", gap: "6px", alignItems: "flex-start" }}>
+                      <span style={{ color: plan.color, flexShrink: 0 }}>✓</span> {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Feature comparison table */}
+          <div className="da-recent-panel">
+            <div className="da-panel-header"><h3 className="da-panel-title">Full Feature Comparison</h3></div>
+            <div className="da-table" role="table">
+              <div className="da-table-head" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr" }}>
+                <span>FEATURE</span><span>FREE</span><span>STANDARD</span><span>PRO</span><span>ENTERPRISE</span>
+              </div>
+              {COMPARE_ROWS.map(([feat, ...vals]) => (
+                <div className="da-table-row" style={{ gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr" }} key={feat}>
+                  <span style={{ fontWeight: 500 }}>{feat}</span>
+                  {vals.map((v, i) => (
+                    <span key={i} style={{ color: v === "✕" ? "var(--muted)" : v === "✓" ? "var(--accent-green)" : "var(--ink)" }}>
+                      {v}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════ */}
+      {/* TAB: ROI Evaluator                                    */}
+      {/* ══════════════════════════════════════════════════════ */}
+      {activeTab === "evaluator" && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+          {/* Sliders */}
+          <div className="da-recent-panel">
+            <div className="da-panel-header"><h3 className="da-panel-title">Campaign Inputs</h3></div>
+            <div style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "22px" }}>
+              {ROI_SLIDERS.map(({ label, key, min, max, step, unit }) => (
+                <div key={key} style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <label style={{ fontSize: "12px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
+                    <span style={{ fontSize: "15px", fontWeight: "bold" }}>{unit}{roi[key]}</span>
+                  </div>
+                  <input type="range" min={min} max={max} step={step} value={roi[key]}
+                    onChange={e => setRoi(prev => ({ ...prev, [key]: parseFloat(e.target.value) }))}
+                    style={{ width: "100%", accentColor: "var(--ink)" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "var(--muted)" }}>
+                    <span>{unit}{min}</span><span>{unit}{max}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Results + recommendation */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div className="da-recent-panel" style={{ flex: 1 }}>
+              <div className="da-panel-header"><h3 className="da-panel-title">Estimated Results</h3></div>
+              <div className="da-health-grid" style={{ padding: "16px" }}>
+                {([
+                  { label: "Est. Impressions / mo", value: estimatedImpressions.toLocaleString(), color: "var(--ink)" },
+                  { label: "Est. Clicks / mo",       value: estimatedClicks.toLocaleString(),      color: "var(--accent-green)" },
+                  { label: "Cost Per Click (CPC)",    value: estimatedCPC !== "—" ? `$${estimatedCPC}` : "—", color: "var(--primary)" },
+                  { label: "Platform Audience",       value: metrics ? metrics.platformViews.toLocaleString() : "—", color: "var(--muted)" },
+                ] as { label: string; value: string; color: string }[]).map(m => (
+                  <div className="da-health-metric" key={m.label}>
+                    <p className="da-stat-label">{m.label}</p>
+                    <p style={{ fontSize: "22px", fontWeight: "800", color: m.color, margin: "4px 0 0" }}>{m.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="da-recent-panel">
+              <div className="da-panel-header"><h3 className="da-panel-title">Recommendation</h3></div>
+              <div style={{ padding: "16px" }}>
+                <p style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
+                  Suggested plan: <strong style={{ color: "var(--ink)" }}>{recommendation.plan}</strong>
+                </p>
+                <p style={{ fontSize: "13px", color: "var(--ink)", lineHeight: "1.7" }}>{recommendation.text}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 /* ═══ Engagement Section ═══════════════════════════════════ */
 function EngagementSection() {
@@ -450,7 +703,7 @@ function EngagementSection() {
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            style={{ padding: "8px 12px", background: "var(--bg)", color: "var(--foreground)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "14px" }}
+            style={{ padding: "8px 12px", background: "var(--bg)", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "14px" }}
           >
             <option value="all">All Time</option>
             <option value="year">Past Year</option>
@@ -461,7 +714,7 @@ function EngagementSection() {
           <select
             value={country}
             onChange={(e) => setCountry(e.target.value)}
-            style={{ padding: "8px 12px", background: "var(--bg)", color: "var(--foreground)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "14px" }}
+            style={{ padding: "8px 12px", background: "var(--bg)", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: "4px", fontSize: "14px" }}
           >
             <option value="">All Countries</option>
             {data.availableCountries?.map((c: string) => (
@@ -491,8 +744,8 @@ function EngagementSection() {
           <div className="da-chart-header">
             <h3 className="da-panel-title">Engagement Trends</h3>
             <div className="da-legend">
-              <span className="da-legend-submissions" style={{ color: "#3d3d3d" }}>■ Views</span>
-              <span className="da-legend-verifications" style={{ color: "#88c0d0" }}>■ Clicks</span>
+              <span className="da-legend-submissions" style={{ color: "var(--surface-high)" }}>■ Views</span>
+              <span className="da-legend-verifications" style={{ color: "var(--accent-green)" }}>■ Clicks</span>
             </div>
           </div>
           <EngagementChart data={data.chartData} />
