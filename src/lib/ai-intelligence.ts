@@ -62,7 +62,7 @@ Return ONLY the JSON array. Example format:
 
 async function callGemini(apiKey: string, model: string): Promise<RawAiNewsItem[]> {
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -369,7 +369,7 @@ export const DEFAULT_PROVIDERS = [
   {
     name: "Google Gemini",
     slug: "gemini",
-    model: "gemini-1.5-flash-latest",
+    model: "gemini-pro",
     apiKeyEnv: "GEMINI_API_KEY",
     weight: 1.2,
   },
