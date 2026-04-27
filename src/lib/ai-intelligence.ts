@@ -1,16 +1,15 @@
 /**
  * AI News Intelligence Engine
- * ────────────────────────────────────────────────────────────────────────────
+ * -------------------------------------------------------------------------
  * Calls multiple LLM providers in parallel, merges and deduplicates their
- * outputs, computes a weighted credibility score, and persists the results
- * to the AiNewsItem table.
+ * outputs, computes a weighted credibility score, and persists to AiNewsItem.
  *
  * Completely isolated from the manual news submission/moderation system.
  */
 
 import { prisma } from "@/lib/db";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ------------------------------------------------------------------
 
 export type ProviderResult = {
   slug: string;
@@ -25,8 +24,8 @@ export type RawAiNewsItem = {
   category: string;
   scope: "LOCAL" | "INDIA" | "WORLD";
   sourceHint?: string;
-  credibilityScore: number; // 0–100
-  realProbability: number; // 0–100
+  credibilityScore: number; // 0-100
+  realProbability: number;  // 0-100
 };
 
 export type MergedAiNewsItem = RawAiNewsItem & {
@@ -38,44 +37,52 @@ export type MergedAiNewsItem = RawAiNewsItem & {
   finalRealProbability: number;
 };
 
-// ── Prompt builder ───────────────────────────────────────────────────────────
+// ── Prompt builder ---------------------------------------------------------
 
 function buildPrompt(): string {
-  return `You are a professional news intelligence analyst. Generate exactly 5 verified, current news briefs from the past 1–2 hours (${new Date().toUTCString()}).
-
-For each brief, respond with ONLY a JSON array (no markdown, no explanation). Each item must have:
-- "headline": string (concise, factual, max 120 chars)
-- "summaryPoints": string[] (exactly 5 bullet points, factual)
-- "category": string (one of: Politics, Technology, Business, Science, Health, Sports, Environment, International, Security)
-- "scope": string (one of: LOCAL, INDIA, WORLD)
-- "sourceHint": string (e.g. "Reuters, AP", "BBC, Al Jazeera", "TechCrunch, Wired")
-- "credibilityScore": number (0–100, your confidence the event is real and accurate)
-- "realProbability": number (0–100, probability this is genuine news vs. misinformation)
-
-Focus on WORLD and INDIA scope. Base analysis on publicly known, verifiable events. Be honest about uncertainty in your scores.
-
-Return ONLY the JSON array. Example format:
-[{"headline":"...","summaryPoints":["...","...","...","...","..."],"category":"Technology","scope":"WORLD","sourceHint":"Reuters, BBC","credibilityScore":87,"realProbability":92}]`;
+  const now = new Date().toISOString();
+  return (
+    "You are a professional news intelligence analyst. " +
+    "Generate exactly 5 verified, current news briefs from the past 1-2 hours (" + now + ").\n\n" +
+    "For each brief, respond with ONLY a JSON array (no markdown, no explanation). Each item must have:\n" +
+    '- "headline": string (concise, factual, max 120 chars)\n' +
+    '- "summaryPoints": string[] (exactly 5 bullet points, factual)\n' +
+    '- "category": string (one of: Politics, Technology, Business, Science, Health, Sports, Environment, International, Security)\n' +
+    '- "scope": string (one of: LOCAL, INDIA, WORLD)\n' +
+    '- "sourceHint": string (e.g. "Reuters, AP", "BBC, Al Jazeera", "TechCrunch, Wired")\n' +
+    '- "credibilityScore": number (0-100, your confidence the event is real and accurate)\n' +
+    '- "realProbability": number (0-100, probability this is genuine news vs. misinformation)\n\n' +
+    "Focus on WORLD and INDIA scope. Base analysis on publicly known, verifiable events.\n" +
+    "Be honest about uncertainty in your scores.\n\n" +
+    "Return ONLY the JSON array. Example:\n" +
+    '[{"headline":"...","summaryPoints":["...","...","...","...","..."],"category":"Technology","scope":"WORLD","sourceHint":"Reuters, BBC","credibilityScore":87,"realProbability":92}]'
+  );
 }
 
-// ── Provider callers ─────────────────────────────────────────────────────────
+// ── Provider callers -------------------------------------------------------
 
 async function callGemini(apiKey: string, model: string): Promise<RawAiNewsItem[]> {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: buildPrompt() }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
-      }),
-      cache: "no-store",
-    }
-  );
-  if (!res.ok) throw new Error(`Gemini HTTP ${res.status}`);
-  const data = await res.json();
-  const text: string = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const url =
+    "https://generativelanguage.googleapis.com/v1beta/models/" +
+    model +
+    ":generateContent?key=" +
+    apiKey;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: buildPrompt() }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+    }),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error("Gemini HTTP " + res.status + ": " + body.slice(0, 200));
+  }
+  const data = await res.json() as Record<string, unknown>;
+  const candidates = data.candidates as Array<{ content: { parts: Array<{ text: string }> } }> | undefined;
+  const text: string = candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   return parseJsonArray(text);
 }
 
@@ -84,7 +91,7 @@ async function callGroq(apiKey: string, model: string): Promise<RawAiNewsItem[]>
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      "Authorization": "Bearer " + apiKey,
     },
     body: JSON.stringify({
       model,
@@ -94,8 +101,11 @@ async function callGroq(apiKey: string, model: string): Promise<RawAiNewsItem[]>
     }),
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`Groq HTTP ${res.status}`);
-  const data = await res.json();
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error("Groq HTTP " + res.status + ": " + body.slice(0, 200));
+  }
+  const data = await res.json() as { choices?: Array<{ message: { content: string } }> };
   const text: string = data.choices?.[0]?.message?.content ?? "";
   return parseJsonArray(text);
 }
@@ -105,7 +115,7 @@ async function callCohere(apiKey: string, model: string): Promise<RawAiNewsItem[
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      "Authorization": "Bearer " + apiKey,
     },
     body: JSON.stringify({
       model,
@@ -115,8 +125,11 @@ async function callCohere(apiKey: string, model: string): Promise<RawAiNewsItem[
     }),
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`Cohere HTTP ${res.status}`);
-  const data = await res.json();
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error("Cohere HTTP " + res.status + ": " + body.slice(0, 200));
+  }
+  const data = await res.json() as { generations?: Array<{ text: string }> };
   const text: string = data.generations?.[0]?.text ?? "";
   return parseJsonArray(text);
 }
@@ -126,7 +139,7 @@ async function callMistral(apiKey: string, model: string): Promise<RawAiNewsItem
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      "Authorization": "Bearer " + apiKey,
     },
     body: JSON.stringify({
       model,
@@ -136,25 +149,28 @@ async function callMistral(apiKey: string, model: string): Promise<RawAiNewsItem
     }),
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`Mistral HTTP ${res.status}`);
-  const data = await res.json();
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error("Mistral HTTP " + res.status + ": " + body.slice(0, 200));
+  }
+  const data = await res.json() as { choices?: Array<{ message: { content: string } }> };
   const text: string = data.choices?.[0]?.message?.content ?? "";
   return parseJsonArray(text);
 }
 
 /**
- * OpenRouter — unified gateway to 200+ models.
- * Uses the OpenAI-compatible API format.
+ * OpenRouter - unified gateway to 200+ models (OpenAI-compatible API).
  * Docs: https://openrouter.ai/docs
  */
 async function callOpenRouter(apiKey: string, model: string): Promise<RawAiNewsItem[]> {
+  const referer = process.env.APP_URL ?? "https://thefourthpillar.netlify.app";
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": process.env.APP_URL ?? "https://thefourthpillar.netlify.app",
-      "X-Title": "The Fourth Pillar — AI Intelligence Engine",
+      "Authorization": "Bearer " + apiKey,
+      "HTTP-Referer": referer,
+      "X-Title": "The Fourth Pillar AI Intelligence Engine",
     },
     body: JSON.stringify({
       model,
@@ -164,17 +180,19 @@ async function callOpenRouter(apiKey: string, model: string): Promise<RawAiNewsI
     }),
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`OpenRouter HTTP ${res.status}: ${await res.text()}`);
-  const data = await res.json();
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error("OpenRouter HTTP " + res.status + ": " + body.slice(0, 200));
+  }
+  const data = await res.json() as { choices?: Array<{ message: { content: string } }> };
   const text: string = data.choices?.[0]?.message?.content ?? "";
   return parseJsonArray(text);
 }
 
-// ── JSON parser (robust) ─────────────────────────────────────────────────────
+// ── JSON parser (robust) ---------------------------------------------------
 
 function parseJsonArray(raw: string): RawAiNewsItem[] {
   try {
-    // Strip markdown code fences if present
     const clean = raw
       .replace(/^```(?:json)?\n?/i, "")
       .replace(/\n?```$/i, "")
@@ -184,22 +202,22 @@ function parseJsonArray(raw: string): RawAiNewsItem[] {
     const lastBracket = clean.lastIndexOf("]");
     if (firstBracket === -1 || lastBracket === -1) return [];
 
-    const arr = JSON.parse(clean.slice(firstBracket, lastBracket + 1));
+    const arr = JSON.parse(clean.slice(firstBracket, lastBracket + 1)) as unknown[];
     if (!Array.isArray(arr)) return [];
 
     return arr.filter(
-      (item) =>
-        typeof item.headline === "string" &&
-        Array.isArray(item.summaryPoints) &&
-        typeof item.credibilityScore === "number" &&
-        typeof item.realProbability === "number"
+      (item): item is RawAiNewsItem =>
+        typeof (item as Record<string, unknown>).headline === "string" &&
+        Array.isArray((item as Record<string, unknown>).summaryPoints) &&
+        typeof (item as Record<string, unknown>).credibilityScore === "number" &&
+        typeof (item as Record<string, unknown>).realProbability === "number"
     );
   } catch {
     return [];
   }
 }
 
-// ── Dispatch to provider ─────────────────────────────────────────────────────
+// ── Dispatch to provider ---------------------------------------------------
 
 async function callProvider(slug: string, model: string, apiKey: string): Promise<RawAiNewsItem[]> {
   switch (slug) {
@@ -208,11 +226,11 @@ async function callProvider(slug: string, model: string, apiKey: string): Promis
     case "cohere":      return callCohere(apiKey, model);
     case "mistral":     return callMistral(apiKey, model);
     case "openrouter":  return callOpenRouter(apiKey, model);
-    default:            throw new Error(`Unknown provider slug: ${slug}`);
+    default:            throw new Error("Unknown provider slug: " + slug);
   }
 }
 
-// ── Deduplication by headline similarity ────────────────────────────────────
+// ── Deduplication by headline similarity ----------------------------------
 
 function isSimilarHeadline(a: string, b: string): boolean {
   const normalize = (s: string) =>
@@ -224,7 +242,7 @@ function isSimilarHeadline(a: string, b: string): boolean {
   return similarity > 0.55;
 }
 
-// ── Main orchestrator ─────────────────────────────────────────────────────────
+// ── Main orchestrator ------------------------------------------------------
 
 export async function runIntelligenceFetch(): Promise<{
   saved: number;
@@ -249,12 +267,11 @@ export async function runIntelligenceFetch(): Promise<{
           slug: p.slug,
           model: p.model,
           items: [],
-          error: `Missing env var: ${p.apiKeyEnv}`,
+          error: "Missing env var: " + p.apiKeyEnv,
         };
       }
       try {
         const items = await callProvider(p.slug, p.model, apiKey);
-        // Update lastUsedAt
         await prisma.aiProvider.update({
           where: { id: p.id },
           data: { lastUsedAt: new Date() },
@@ -275,7 +292,7 @@ export async function runIntelligenceFetch(): Promise<{
   const merged: MergedAiNewsItem[] = [];
   const errors: string[] = providerResults
     .filter((r) => r.error)
-    .map((r) => `${r.slug}: ${r.error}`);
+    .map((r) => r.slug + ": " + r.error);
 
   for (const result of providerResults) {
     if (result.error || result.items.length === 0) continue;
@@ -283,18 +300,15 @@ export async function runIntelligenceFetch(): Promise<{
       providers.find((p) => p.slug === result.slug)?.weight ?? 1.0;
 
     for (const item of result.items) {
-      // Check for similar headline in merged list
       const existing = merged.find((m) =>
         isSimilarHeadline(m.headline, item.headline)
       );
       if (existing) {
-        // Merge: add this provider's scores
         existing.providerBreakdown[result.slug] = {
           score: item.credibilityScore,
           realProb: item.realProbability,
           model: result.model,
         };
-        // Recalculate weighted averages
         const breakdown = Object.entries(existing.providerBreakdown);
         const totalWeight = breakdown.reduce((acc, [slug]) => {
           const w = providers.find((p) => p.slug === slug)?.weight ?? 1.0;
@@ -311,11 +325,12 @@ export async function runIntelligenceFetch(): Promise<{
             return acc + d.realProb * w;
           }, 0) / totalWeight;
       } else {
+        const validScope = ["LOCAL", "INDIA", "WORLD"].includes(item.scope)
+          ? item.scope
+          : "WORLD";
         merged.push({
           ...item,
-          scope: (["LOCAL", "INDIA", "WORLD"].includes(item.scope)
-            ? item.scope
-            : "WORLD") as "LOCAL" | "INDIA" | "WORLD",
+          scope: validScope as "LOCAL" | "INDIA" | "WORLD",
           providerBreakdown: {
             [result.slug]: {
               score: item.credibilityScore,
@@ -356,7 +371,7 @@ export async function runIntelligenceFetch(): Promise<{
   return { saved, providerResults, errors };
 }
 
-// ── Seed default providers (called on first setup) ───────────────────────────
+// ── Seed default providers -------------------------------------------------
 
 export const DEFAULT_PROVIDERS = [
   {
@@ -369,7 +384,7 @@ export const DEFAULT_PROVIDERS = [
   {
     name: "Google Gemini",
     slug: "gemini",
-    model: "gemini-pro",
+    model: "gemini-1.5-flash",
     apiKeyEnv: "GEMINI_API_KEY",
     weight: 1.2,
   },
@@ -398,8 +413,9 @@ export const DEFAULT_PROVIDERS = [
 
 export async function seedDefaultProviders() {
   for (const p of DEFAULT_PROVIDERS) {
-    // Enable OpenRouter automatically if its key is present; others disabled until configured
-    const autoEnable = p.slug === "openrouter" && !!process.env[p.apiKeyEnv];
+    const keySet = !!process.env[p.apiKeyEnv];
+    // Auto-enable providers whose key is already in .env
+    const autoEnable = keySet && (p.slug === "openrouter" || p.slug === "groq" || p.slug === "gemini");
     await prisma.aiProvider.upsert({
       where: { slug: p.slug },
       update: {},
