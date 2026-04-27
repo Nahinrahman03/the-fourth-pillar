@@ -63,10 +63,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const sort = resolveSort(rawSort);
   const isSearching = query.length >= 2;
 
-  const [news, user, dbAds] = await Promise.all([
+  const [news, user, dbAds, aiCount] = await Promise.all([
     isSearching ? searchNews(query) : getNewsBySort(sort),
     getCurrentUser(),
     prisma.advertisement.findMany(),
+    prisma.aiNewsItem.count({ where: { isActive: true } }).catch(() => 0),
   ]);
 
   const getAd = (slotId: string, defaultAd: any) => {
@@ -83,7 +84,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   return (
     <div className="home-layout">
-      {/* ── Top Banner Ad (admin preview / live for all when enabled) ── */}
+      {/* ── Top Banner Ad ── */}
       <AdSlot ad={topBannerAd} devPreview={isAdmin} className="ad-slot--banner" />
 
       {/* ── Main feed column ── */}
@@ -104,7 +105,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           </p>
         </div>
 
-        {/* Sort tabs */}
+        {/* Sort tabs + AI Intelligence tab */}
         {!isSearching && (
           <nav className="sort-tabs" aria-label="News sort">
             {VALID_SORTS.map((s) => (
@@ -117,6 +118,15 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                 {SORT_LABELS[s]}
               </Link>
             ))}
+            {/* AI Intelligence tab — links to the separate AI feed page */}
+            <Link
+              href="/ai-news"
+              className="sort-tab sort-tab--ai"
+              title="Autonomous AI-powered news with credibility scores"
+            >
+              <span className="sort-tab-ai-dot" aria-hidden="true" />
+              AI Intelligence
+            </Link>
           </nav>
         )}
 
@@ -133,7 +143,6 @@ export default async function HomePage({ searchParams }: HomePageProps) {
                   item={item}
                   index={index}
                 />
-                {/* Inline feed ad — injected after every 6th card; only rendered when admin previewing or ad is live */}
                 {(index + 1) % 6 === 0 && (
                   <AdSlot ad={inlineFeedAd} devPreview={isAdmin} className="ad-slot--inline" />
                 )}
@@ -170,8 +179,40 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
       {/* ── Right widget column ── */}
       <aside className="widget-col" aria-label="Sidebar widgets">
-        {/* Sidebar Ad Slot — visible to admins always; normal users only see when enabled */}
+        {/* Sidebar Ad Slot */}
         <AdSlot ad={mainPageAd} devPreview={isAdmin} />
+
+        {/* AI Intelligence Feed widget */}
+        <Link href="/ai-news" className="widget-card ai-feed-widget" aria-label="View AI Intelligence Feed">
+          <div className="widget-header ai-feed-widget-header">
+            <span className="ai-feed-widget-badge">
+              <span className="ai-feed-widget-pulse" aria-hidden="true" />
+              AI
+            </span>
+            <span>Intelligence Feed</span>
+          </div>
+          <div className="widget-body ai-feed-widget-body">
+            <p className="ai-feed-widget-desc">
+              Autonomous briefings fetched every hour from 4 AI providers — with
+              credibility scores &amp; real/fake probability.
+            </p>
+            <div className="ai-feed-widget-stats">
+              <div className="ai-feed-widget-stat">
+                <span className="ai-feed-widget-stat-val">{aiCount}</span>
+                <span className="ai-feed-widget-stat-label">AI Briefs</span>
+              </div>
+              <div className="ai-feed-widget-stat">
+                <span className="ai-feed-widget-stat-val">4</span>
+                <span className="ai-feed-widget-stat-label">Providers</span>
+              </div>
+              <div className="ai-feed-widget-stat">
+                <span className="ai-feed-widget-stat-val">~1hr</span>
+                <span className="ai-feed-widget-stat-label">Cycle</span>
+              </div>
+            </div>
+            <div className="ai-feed-widget-cta">View AI Feed →</div>
+          </div>
+        </Link>
 
         {/* Scope quick-links */}
         <div className="widget-card">

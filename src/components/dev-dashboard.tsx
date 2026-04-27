@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { TimeAgo } from "@/components/time-ago";
+import { AiIntelligencePanel } from "@/components/ai-intelligence-panel";
 
 /* ═══ Types ═══════════════════════════════════════════════ */
 type Period = "daily" | "weekly" | "monthly";
@@ -1119,7 +1120,7 @@ function SecuritySection({ stats, security, router }: { stats: Stats; security: 
 }
 
 /* ═══ Root Dashboard ════════════════════════════════════════ */
-const NAV_TOP = ["Overview", "Users", "Contributions", "Engagement", "Advertisements", "System Health"];
+const NAV_TOP = ["Overview", "Users", "Contributions", "Engagement", "Advertisements", "System Health", "AI Intelligence"];
 const NAV_BOT = ["Security"];
 type NavSection = string;
 
@@ -1165,7 +1166,8 @@ export function DevDashboard({ initial }: { initial: AnalyticsPayload }) {
 
   const navIcon = (item: string) =>
     item === "Overview" ? "⊞" : item === "Users" ? "◯" : item === "Contributions" ? "≡" :
-    item === "Engagement" ? "📈" : item === "Advertisements" ? "🪧" : item === "System Health" ? "⬡" : item === "Security" ? "⬡" : "⚿";
+    item === "Engagement" ? "📈" : item === "Advertisements" ? "🪧" : item === "System Health" ? "⬡" :
+    item === "AI Intelligence" ? "🤖" : item === "Security" ? "⬡" : "⚿";
 
   function renderMain() {
     if (activeNav === "Users") return <UsersSection router={router} />;
@@ -1174,6 +1176,7 @@ export function DevDashboard({ initial }: { initial: AnalyticsPayload }) {
     if (activeNav === "Advertisements") return <AdsSection />;
     if (activeNav === "System Health") return <SystemHealthSection stats={data.stats} security={data.security} />;
     if (activeNav === "Security") return <SecuritySection stats={data.stats} security={data.security} router={router} />;
+    if (activeNav === "AI Intelligence") return <AiIntelligencePanel />;
     // Overview
     return (
       <OverviewSection

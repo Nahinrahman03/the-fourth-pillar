@@ -5,6 +5,7 @@ import Script from "next/script";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarNav } from "@/components/sidebar-nav";
+import { TrendingAlert } from "@/components/trending-alert";
 import { getCurrentUser } from "@/lib/auth";
 
 import "./globals.css";
@@ -105,6 +106,7 @@ export default async function RootLayout({
         <Providers>
           <div className="terminal-shell">
             <SiteHeader />
+            <TrendingAlert />
             <div className="app-body">
               <SidebarNav isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
               <div className="main-and-footer">

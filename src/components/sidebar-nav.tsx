@@ -55,6 +55,18 @@ const NAV_ITEMS: NavItem[] = [
     adminOnly: false,
   },
   {
+    id: "contributions",
+    label: "My Briefs",
+    href: "/dashboard/contributions",
+    icon: (
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M2 4h10M2 7h7M2 10h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+    ),
+    requiresAuth: true,
+    adminOnly: false,
+  },
+  {
     id: "profile",
     label: "Profile",
     href: "/dashboard/profile",
@@ -65,6 +77,20 @@ const NAV_ITEMS: NavItem[] = [
       </svg>
     ),
     requiresAuth: true,
+    adminOnly: false,
+  },
+  {
+    id: "ai-news",
+    label: "AI Feed",
+    href: "/ai-news",
+    icon: (
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <circle cx="7" cy="4" r="2" stroke="currentColor" strokeWidth="1.3" />
+        <path d="M2 12c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        <path d="M11.5 1.5l1 1M2.5 1.5l-1 1M7 1V0" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+      </svg>
+    ),
+    requiresAuth: false,
     adminOnly: false,
   },
 ];

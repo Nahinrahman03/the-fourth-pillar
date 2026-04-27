@@ -249,3 +249,41 @@ model NewsEvent {
   @@index([createdAt])
   @@index([country])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI INTELLIGENCE ENGINE — Isolated from all manual news models above
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Configuration for each AI/LLM provider integrated into the intelligence engine.
+model AiProvider {
+  id          String   @id @default(cuid())
+  name        String   @unique  // e.g. "Gemini", "Groq", "Cohere", "Mistral"
+  slug        String   @unique  // e.g. "gemini", "groq", "cohere", "mistral"
+  model       String            // e.g. "gemini-1.5-flash"
+  apiKeyEnv   String            // env var name, e.g. "GEMINI_API_KEY"
+  enabled     Boolean  @default(true)
+  weight      Float    @default(1.0)  // credibility weight multiplier (0.1 – 2.0)
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+/// A single news brief generated and scored by the AI Intelligence Engine.
+model AiNewsItem {
+  id                String   @id @default(cuid())
+  headline          String
+  summaryPoints     String   // JSON array string
+  category          String
+  scope             String   @default("WORLD") // "LOCAL" | "INDIA" | "WORLD"
+  sourceHint        String?  // e.g. "Multiple news aggregators", "Reuters, BBC"
+  credibilityScore  Float    // 0–100 weighted average across providers
+  realProbability   Float    // 0–100 probability of being real news
+  providerBreakdown String   // JSON: { providerSlug: { score, realProb, model } }
+  fetchedAt         DateTime @default(now())
+  isActive          Boolean  @default(true)
+
+  @@index([fetchedAt])
+  @@index([credibilityScore])
+  @@index([scope, fetchedAt])
+  @@index([category, fetchedAt])
+}

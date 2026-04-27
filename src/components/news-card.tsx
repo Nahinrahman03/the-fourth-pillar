@@ -1,7 +1,7 @@
 import type { NewsItem } from "@prisma/client";
 
 import { DeleteNewsButton } from "@/components/delete-news-button";
-import { FlagNewsButton } from "@/components/flag-news-button";
+import { NewsCardMenu } from "@/components/news-card-menu";
 import { NewsTracker, TrackedSourceLink } from "@/components/news-tracker";
 import { TimeAgo } from "@/components/time-ago";
 import { summaryPointsFromUnknown } from "@/lib/utils";
@@ -41,7 +41,7 @@ export function NewsCard({
           </span>
         </div>
         <div className="news-card-actions">
-          <FlagNewsButton newsId={item.id} isLoggedIn={isLoggedIn} />
+          <NewsCardMenu newsId={item.id} headline={item.headline} isLoggedIn={isLoggedIn} />
           {isAdmin ? (
             <DeleteNewsButton headline={item.headline} newsId={item.id} />
           ) : null}

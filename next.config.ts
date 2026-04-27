@@ -11,10 +11,24 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           {
-            // Allow Firebase signInWithPopup to communicate back
-            // "same-origin-allow-popups" lets opened popups post messages back
             key: "Cross-Origin-Opener-Policy",
             value: "same-origin-allow-popups",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "origin-when-cross-origin",
+          },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
           },
         ],
       },
