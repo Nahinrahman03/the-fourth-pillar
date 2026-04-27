@@ -114,6 +114,21 @@ function UsersSection({ router }: { router: ReturnType<typeof useRouter> }) {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const deleteUser = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this user? All their submissions and profile data will be permanently removed.")) return;
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setUsers(prev => prev.filter(u => u.id !== id));
+      } else {
+        const data = await res.json();
+        alert(data.error ?? "Failed to delete.");
+      }
+    } catch (err) {
+      alert("Error deleting user.");
+    }
+  };
+
   useEffect(() => {
     void (async () => {
       try {
@@ -163,13 +178,13 @@ function UsersSection({ router }: { router: ReturnType<typeof useRouter> }) {
           <span className="da-view-all">{users.length} accounts</span>
         </div>
         <div className="da-table" role="table">
-          <div className="da-table-head da-users-cols" role="row">
-            <span>IDENTIFIER</span><span>ROLE</span><span>SUBMISSIONS</span><span>POINTS</span><span>LAST SEEN</span><span>JOINED</span>
+          <div className="da-table-head da-users-cols" role="row" style={{ gridTemplateColumns: "1fr 100px 100px 100px 100px 100px 40px" }}>
+            <span>IDENTIFIER</span><span>ROLE</span><span>SUBMISSIONS</span><span>POINTS</span><span>LAST SEEN</span><span>JOINED</span><span></span>
           </div>
           {users.length === 0 ? (
             <div className="da-table-empty">No users found.</div>
           ) : users.map(u => (
-            <div className="da-table-row da-users-cols" key={u.id} role="row">
+            <div className="da-table-row da-users-cols" key={u.id} role="row" style={{ gridTemplateColumns: "1fr 100px 100px 100px 100px 100px 40px" }}>
               <span className="da-table-contrib" title={u.email ?? u.phoneNumber ?? u.id}>
                 {(u.email ?? u.phoneNumber ?? `ID: ${u.id.slice(-8)}`).slice(0, 28)}
               </span>
@@ -180,6 +195,28 @@ function UsersSection({ router }: { router: ReturnType<typeof useRouter> }) {
               <span>{u.profile?.points ?? 0} pts</span>
               <span>{u.profile?.lastSeenAt ? <TimeAgo date={u.profile.lastSeenAt} /> : <span className="da-table-contrib">—</span>}</span>
               <span><TimeAgo date={u.createdAt} /></span>
+              <button 
+                onClick={() => deleteUser(u.id)}
+                title="Delete user"
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--alert)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0",
+                  opacity: 0.6
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = "0.6"}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
             </div>
           ))}
         </div>
@@ -203,6 +240,21 @@ function ContributionsSection({ router }: { router: ReturnType<typeof useRouter>
       setContribs(json.submissions ?? []);
     } finally { setLoading(false); }
   }, []);
+
+  const deleteSubmission = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this submission?")) return;
+    try {
+      const res = await fetch(`/api/admin/submissions/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setContribs(prev => prev.filter(c => c.fullId !== id));
+      } else {
+        const data = await res.json();
+        alert(data.error ?? "Failed to delete.");
+      }
+    } catch (err) {
+      alert("Error deleting submission.");
+    }
+  };
 
   useEffect(() => { void fetchContribs(filter); }, [filter, fetchContribs]);
 
@@ -244,13 +296,13 @@ function ContributionsSection({ router }: { router: ReturnType<typeof useRouter>
           {loading ? <span className="da-view-all">Loading…</span> : null}
         </div>
         <div className="da-table" role="table">
-          <div className="da-table-head da-contrib-cols" role="row">
-            <span>ID</span><span>HEADLINE</span><span>CATEGORY</span><span>CONTRIBUTOR</span><span>STATUS</span><span>POINTS</span><span>SUBMITTED</span>
+          <div className="da-table-head da-contrib-cols" role="row" style={{ gridTemplateColumns: "70px 1fr 100px 140px 90px 60px 100px 40px" }}>
+            <span>ID</span><span>HEADLINE</span><span>CATEGORY</span><span>CONTRIBUTOR</span><span>STATUS</span><span>POINTS</span><span>SUBMITTED</span><span></span>
           </div>
           {contribs.length === 0 ? (
             <div className="da-table-empty">{loading ? "Loading…" : "No submissions found."}</div>
           ) : contribs.map(c => (
-            <div className="da-table-row da-contrib-cols" key={c.fullId} role="row">
+            <div className="da-table-row da-contrib-cols" key={c.fullId} role="row" style={{ gridTemplateColumns: "70px 1fr 100px 140px 90px 60px 100px 40px" }}>
               <span className="da-table-id">#{c.id}</span>
               <span className="da-contrib-headline" title={c.headline}>{c.headline.length > 45 ? c.headline.slice(0, 43) + "…" : c.headline}</span>
               <span>{c.category}</span>
@@ -258,6 +310,28 @@ function ContributionsSection({ router }: { router: ReturnType<typeof useRouter>
               <span><span className={`da-status-chip ${c.status.toLowerCase()}`}>{c.status}</span></span>
               <span className="da-table-pts">{c.status === "APPROVED" ? `+${c.points}` : c.status === "REJECTED" ? "0" : "—"}</span>
               <span><TimeAgo date={c.createdAt} /></span>
+              <button 
+                onClick={() => deleteSubmission(c.fullId)}
+                title="Delete submission"
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--alert)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "0",
+                  opacity: 0.6
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = "0.6"}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
             </div>
           ))}
         </div>

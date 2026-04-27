@@ -24,6 +24,7 @@ export type RawAiNewsItem = {
   category: string;
   scope: "LOCAL" | "INDIA" | "WORLD";
   sourceHint?: string;
+  sourceUrl?: string;
   credibilityScore: number; // 0-100
   realProbability: number;  // 0-100
 };
@@ -42,20 +43,22 @@ export type MergedAiNewsItem = RawAiNewsItem & {
 function buildPrompt(): string {
   const now = new Date().toISOString();
   return (
-    "You are a professional news intelligence analyst. " +
-    "Generate exactly 5 verified, current news briefs from the past 1-2 hours (" + now + ").\n\n" +
-    "For each brief, respond with ONLY a JSON array (no markdown, no explanation). Each item must have:\n" +
-    '- "headline": string (concise, factual, max 120 chars)\n' +
-    '- "summaryPoints": string[] (exactly 5 bullet points, factual)\n' +
-    '- "category": string (one of: Politics, Technology, Business, Science, Health, Sports, Environment, International, Security)\n' +
-    '- "scope": string (one of: LOCAL, INDIA, WORLD)\n' +
-    '- "sourceHint": string (e.g. "Reuters, AP", "BBC, Al Jazeera", "TechCrunch, Wired")\n' +
-    '- "credibilityScore": number (0-100, your confidence the event is real and accurate)\n' +
-    '- "realProbability": number (0-100, probability this is genuine news vs. misinformation)\n\n' +
-    "Focus on WORLD and INDIA scope. Base analysis on publicly known, verifiable events.\n" +
-    "Be honest about uncertainty in your scores.\n\n" +
+    "You are a high-fidelity news intelligence aggregator. " +
+    "Task: Generate exactly 5 news briefs based ONLY on verified reporting from major global agencies (e.g., Reuters, AP, BBC, CNN, Al Jazeera, Bloomberg) from the last 2 hours (" + now + ").\n\n" +
+    "CRITICAL RULES:\n" +
+    "1. NO HALLUCINATIONS: Only report events that have actually occurred and are being reported by major outlets.\n" +
+    "2. MANDATORY CITATION: You MUST identify the specific news agencies reporting each event in the 'sourceHint' field.\n" +
+    "3. FORMAT: Respond with ONLY a raw JSON array. Each item must have:\n" +
+    '- "headline": string (factual, professional, max 100 chars)\n' +
+    '- "summaryPoints": string[] (Exactly 5 concise bullet points detailing the facts of the story)\n' +
+    '- "category": string (Politics, Technology, Business, Science, Health, Sports, Environment, International, Security)\n' +
+    '- "scope": string (LOCAL, INDIA, WORLD)\n' +
+    '- "sourceHint": string (MANDATORY: list reporting agencies, e.g. "Reuters, BBC")\n' +
+    '- "sourceUrl": string (MANDATORY: provide a REAL, direct URL to the report on the agency website)\n' +
+    '- "credibilityScore": number (0-100, based on cross-agency consensus)\n' +
+    '- "realProbability": number (0-100, probability this is an established fact vs. breaking rumor)\n\n' +
     "Return ONLY the JSON array. Example:\n" +
-    '[{"headline":"...","summaryPoints":["...","...","...","...","..."],"category":"Technology","scope":"WORLD","sourceHint":"Reuters, BBC","credibilityScore":87,"realProbability":92}]'
+    '[{"headline":"...","summaryPoints":["..."],"category":"Business","scope":"WORLD","sourceHint":"Reuters, BBC","sourceUrl":"https://www.reuters.com/...","credibilityScore":98,"realProbability":95}]'
   );
 }
 
@@ -356,6 +359,7 @@ export async function runIntelligenceFetch(): Promise<{
           category: item.category,
           scope: item.scope,
           sourceHint: item.sourceHint ?? null,
+          sourceUrl: item.sourceUrl ?? null,
           credibilityScore: Math.min(100, Math.max(0, item.finalCredibility)),
           realProbability: Math.min(100, Math.max(0, item.finalRealProbability)),
           providerBreakdown: JSON.stringify(item.providerBreakdown),
@@ -389,9 +393,9 @@ export const DEFAULT_PROVIDERS = [
     weight: 1.2,
   },
   {
-    name: "Groq (Llama 3)",
+    name: "Groq (Llama 3.3)",
     slug: "groq",
-    model: "llama3-70b-8192",
+    model: "llama-3.3-70b-versatile",
     apiKeyEnv: "GROQ_API_KEY",
     weight: 1.0,
   },

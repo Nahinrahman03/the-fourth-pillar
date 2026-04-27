@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { FlagNewsButton } from "./flag-news-button";
-import { DeleteNewsButton } from "./delete-news-button";
+import { AiFlagNewsButton } from "./ai-flag-news-button";
+import { AiDeleteNewsButton } from "./ai-delete-news-button";
 
 type Props = {
   newsId: string;
@@ -11,7 +11,7 @@ type Props = {
   isAdmin?: boolean;
 };
 
-export function NewsCardMenu({ newsId, headline, isLoggedIn, isAdmin = false }: Props) {
+export function AiNewsCardMenu({ newsId, headline, isLoggedIn, isAdmin = false }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -26,12 +26,13 @@ export function NewsCardMenu({ newsId, headline, isLoggedIn, isAdmin = false }: 
   }, []);
 
   async function handleShare() {
-    const url = window.location.origin + `/?q=${encodeURIComponent(headline)}`;
+    // Note: AI news doesn't have a direct detail page yet, so we share the current page with a search query or just the headline
+    const url = window.location.origin + `/ai-news?q=${encodeURIComponent(headline)}`;
     if (navigator.share) {
       try {
         await navigator.share({
           title: headline,
-          text: `Check out this news: ${headline}`,
+          text: `Check out this AI Intelligence report: ${headline}`,
           url: url,
         });
       } catch (err) {
@@ -61,8 +62,6 @@ export function NewsCardMenu({ newsId, headline, isLoggedIn, isAdmin = false }: 
           justifyContent: "center",
           transition: "color 140ms ease",
         }}
-        onMouseEnter={(e) => e.currentTarget.style.color = "var(--ink)"}
-        onMouseLeave={(e) => e.currentTarget.style.color = "var(--ink-soft)"}
       >
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
           <circle cx="10" cy="4" r="1.5" />
@@ -86,7 +85,6 @@ export function NewsCardMenu({ newsId, headline, isLoggedIn, isAdmin = false }: 
             display: "flex",
             flexDirection: "column",
             minWidth: "140px",
-            animation: "dropdown-in 120ms ease",
           }}
         >
           <button 
@@ -97,7 +95,14 @@ export function NewsCardMenu({ newsId, headline, isLoggedIn, isAdmin = false }: 
               borderBottom: "1px solid var(--line)",
               display: "flex",
               alignItems: "center",
-              gap: "8px"
+              gap: "8px",
+              width: "100%",
+              textAlign: "left",
+              background: "none",
+              borderLeft: "none",
+              borderRight: "none",
+              borderTop: "none",
+              cursor: "pointer"
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -109,12 +114,12 @@ export function NewsCardMenu({ newsId, headline, isLoggedIn, isAdmin = false }: 
           </button>
           
           <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "flex-start", borderBottom: isAdmin ? "1px solid var(--line)" : "none" }}>
-            <FlagNewsButton newsId={newsId} isLoggedIn={isLoggedIn} />
+            <AiFlagNewsButton newsId={newsId} isLoggedIn={isLoggedIn} />
           </div>
 
           {isAdmin && (
             <div style={{ padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "flex-start" }}>
-              <DeleteNewsButton newsId={newsId} headline={headline} />
+              <AiDeleteNewsButton newsId={newsId} headline={headline} />
             </div>
           )}
         </div>

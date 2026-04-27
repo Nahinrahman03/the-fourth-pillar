@@ -138,6 +138,22 @@ export function AiIntelligencePanel() {
     }
   }
 
+  async function deleteItem(id: string) {
+    if (!confirm("Are you sure you want to remove this AI brief?")) return;
+    try {
+      const res = await fetch(`/api/ai-intelligence/news/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setRecentItems((prev) => prev.filter((item) => item.id !== id));
+        setTotalItems((prev) => prev - 1);
+      } else {
+        const data = await res.json();
+        alert(data.error ?? "Failed to delete.");
+      }
+    } catch (err) {
+      alert("Error deleting item.");
+    }
+  }
+
   const enabledCount = providers.filter((p) => p.enabled).length;
 
   return (
@@ -374,6 +390,29 @@ export function AiIntelligencePanel() {
                         title={slug}
                       />
                     ))}
+                    <button 
+                      onClick={() => deleteItem(item.id)}
+                      className="ai-recent-delete-btn"
+                      title="Delete brief"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--alert)",
+                        cursor: "pointer",
+                        padding: "4px",
+                        display: "flex",
+                        alignItems: "center",
+                        opacity: 0.6,
+                        transition: "opacity 0.2s"
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.opacity = "1"}
+                      onMouseLeave={(e) => e.currentTarget.style.opacity = "0.6"}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                      </svg>
+                    </button>
                   </div>
                 </div>
               );

@@ -276,11 +276,13 @@ model AiNewsItem {
   category          String
   scope             String   @default("WORLD") // "LOCAL" | "INDIA" | "WORLD"
   sourceHint        String?  // e.g. "Multiple news aggregators", "Reuters, BBC"
+  sourceUrl         String?  // Link to the primary report
   credibilityScore  Float    // 0–100 weighted average across providers
   realProbability   Float    // 0–100 probability of being real news
   providerBreakdown String   // JSON: { providerSlug: { score, realProb, model } }
   fetchedAt         DateTime @default(now())
   isActive          Boolean  @default(true)
+  flagCount         Int      @default(0)
 
   @@index([fetchedAt])
   @@index([credibilityScore])

@@ -45,6 +45,7 @@ export async function GET(request: Request) {
           category: true,
           scope: true,
           sourceHint: true,
+          sourceUrl: true,
           credibilityScore: true,
           realProbability: true,
           providerBreakdown: true,
