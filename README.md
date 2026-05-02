@@ -17,19 +17,33 @@ A moderated news web app where visitors can read short headline-based updates an
 - Next.js App Router
 - TypeScript
 - Prisma
-- SQLite
+- PostgreSQL (Supabase)
+- Firebase Auth
 - Zod
 
 ## Quick start
 
 1. Copy `.env.example` to `.env`.
-2. Set `SESSION_SECRET` and update `ADMIN_EMAILS`.
-3. Install dependencies with `npm install`.
-4. Generate the Prisma client with `npm run prisma:generate`.
-5. Create the database with `npm run db:push`.
-6. If Prisma `db push` has an engine issue on your machine, use `npm run db:bootstrap` instead.
-7. Seed starter data with `npm run db:seed`.
-8. Run the app with `npm run dev`.
+2. Fill in the required environment variables:
+   - **Supabase**: `DATABASE_URL` and `DIRECT_URL`.
+   - **Firebase**: `NEXT_PUBLIC_FIREBASE_*` variables.
+   - **NextAuth**: `NEXTAUTH_SECRET`.
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+4. Generate Prisma client:
+   ```bash
+   npm run prisma:generate
+   ```
+5. Seed initial data:
+   ```bash
+   npm run db:seed
+   ```
+6. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
 ## Auth delivery notes
 
