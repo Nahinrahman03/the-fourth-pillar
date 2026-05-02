@@ -225,28 +225,6 @@ export default async function AiNewsPage({
         )}
       </div>
 
-      {/* ── API CTA ── */}
-      <div className="ai-api-cta">
-        <div className="ai-api-cta-content">
-          <div className="ai-api-cta-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-              <path d="M4 6h16M4 12h16M4 18h7" strokeLinecap="round" />
-              <circle cx="19" cy="18" r="3" />
-              <path d="M22 21l-1.5-1.5" strokeLinecap="round" />
-            </svg>
-          </div>
-          <div>
-            <p className="ai-api-cta-title">Use this data in your own apps</p>
-            <code className="ai-api-cta-url">GET /api/ai-intelligence</code>
-          </div>
-        </div>
-        <div className="ai-api-cta-params">
-          <span>?scope=INDIA</span>
-          <span>?category=Technology</span>
-          <span>?minCredibility=70</span>
-          <span>?limit=10</span>
-        </div>
-      </div>
     </section>
   );
 }
